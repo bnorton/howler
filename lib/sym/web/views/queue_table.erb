@@ -1,0 +1,27 @@
+<div style="margin-top: 70px;" class="queues">
+  <div class="table stable-striped">
+    <table>
+      <thead>
+      <tr>
+        <th>Queue ID</th>
+        <th>Created</th>
+        <th>Processed ct.</th>
+        <th>Failed ct.</th>
+        <th></th>
+      </tr>
+      </thead>
+
+      <tbody>
+      <% @queues.each do |queue| %>
+        <tr id="queue_<%= queue.id %>">
+          <td><%= queue.id %></td>
+          <td><%= queue.created_at %></td>
+          <td><%= queue.success %></td>
+          <td><%= queue.error %></td>
+          <td><a href="/queues/<%= queue.id %>">More...</a></td>
+        </tr>
+      <% end %>
+      </tbody>
+    </table>
+  </div>
+</div>

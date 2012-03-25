@@ -1,0 +1,31 @@
+<%= erb(:html) %>
+
+<body>
+
+<%= erb(:navigation) %>
+
+
+<div class="queue">
+  <div class="title">
+  <h2 id="<%= @queue.id %>">Queue: <%= @queue.id %></h2>
+  </div>
+</div>
+
+<div class="metadata">
+  <div id="pending_messages">
+    <%= erb(:pending_message_list) %>
+  </div>
+  <div id="processed_messages">
+    <%= erb(:processed_message_list) %>
+  </div>
+</div>
+
+<div class="lists">
+
+</div>
+
+<footer>
+  <p>&copy; <%= Time.now.year %></p>
+</footer>
+</body>
+</html>

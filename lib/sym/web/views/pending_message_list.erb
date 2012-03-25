@@ -1,0 +1,27 @@
+<div style="margin-top: 40px;" class="message_list">
+  <div class="table stable-striped">
+    <table>
+      <thead>
+      <tr>
+        <th>Class</th>
+        <th>Method</th>
+        <th>Args</th>
+        <th>Created At</th>
+        <th>Status</th>
+      </tr>
+      </thead>
+
+      <tbody>
+      <% @pending.each do |message| %>
+        <tr>
+          <td><%= message['class'] %></td>
+          <td><%= message['method'] %></td>
+          <td><%= message['args'] %></td>
+          <td><%= Sym::Util.at(message['created_at']) %></td>
+          <td>pending</td>
+        </tr>
+      <% end %>
+      </tbody>
+    </table>
+  </div>
+</div>

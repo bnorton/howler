@@ -1,0 +1,24 @@
+#navigation .container {
+  display: block;
+  min-height: 60px;
+  margin-bottom: 10px;
+}
+#navigation .navbar .nav {
+  margin: 0 10px;
+}
+
+#navigation .title {
+  color: #999;
+  display: block;
+  line-height: 40px;
+  font-size: 30px;
+  margin: 10px;
+  float: left;
+}
+
+#navigation .nav .item {
+  display: block;
+  line-height: 40px;
+  font-size: 28px;
+  margin: 10px;
+}
