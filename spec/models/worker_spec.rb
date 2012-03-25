@@ -6,9 +6,9 @@ describe Sym::Worker do
 
     def build_message
       Sym::Message.new(
-        :class => "Sym",
-        :method => "length",
-        :args => [1234]
+        "class" => "Sym",
+        "method" => "length",
+        "args" => [1234]
       )
     end
 
