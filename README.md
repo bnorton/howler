@@ -25,3 +25,25 @@
 - Set the retry interval.
 - Retry or Delete failed jobs
 - A list of recent exceptions and back traces
+
+```ruby
+class Worker
+  async :fetch_content, :new_user_email
+
+  def fetch_content
+    ...
+  end
+
+  def self.new_user_email(user)
+    ...
+  end
+end
+
+...
+
+# Then make calls to 'async_' prefixed methods (defined on the class)
+
+Worker.async_fetch_content
+#=> nil # Returns immediately
+
+Worker.async_new_user_email(user)
