@@ -36,5 +36,9 @@ describe Sym::Util do
         Sym::Util.at(Time.now.to_f).should == "Mar 24 2012 14:30:55"
       end
     end
+
+    it "should handle a nil time" do
+      Sym::Util.at(nil).should == ""
+    end
   end
 end

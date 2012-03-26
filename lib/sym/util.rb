@@ -5,6 +5,7 @@ module Sym
     end
 
     def self.at(time)
+      return "" unless time
       Time.at(time).strftime("%b %d %Y %H:%M:%S")
     end
 

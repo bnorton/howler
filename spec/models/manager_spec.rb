@@ -5,12 +5,14 @@ describe Sym::Manager do
     describe "when there are no pending messages" do
       class SampleEx < Exception; end
 
-      it "should sleep for one second" do
-        Sym::Manager.should_receive(:sleep).with(1).and_raise(SampleEx)
+      describe "when there are no messages" do
+        it "should sleep for one second" do
+          Sym::Manager.should_receive(:sleep).with(1).and_raise(SampleEx)
 
-        expect {
-          Sym::Manager.run!
-        }.to raise_error(SampleEx)
+          expect {
+            Sym::Manager.run!
+          }.to raise_error(SampleEx)
+        end
       end
     end
 
@@ -22,6 +24,12 @@ describe Sym::Manager do
         2.times { Sym::Manager.push(Sym::Util, :length, [1,2,3]) }
 
         Sym::Util.stub(:new).and_return(util)
+      end
+
+      it "should not sleep" do
+        Sym::Manager.should_not_receive(:sleep)
+
+        Sym::Manager.run!
       end
 
       it "should process the pending messages" do

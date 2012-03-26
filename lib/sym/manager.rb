@@ -3,8 +3,6 @@ module Sym
     DEFAULT = "pending:default"
 
     def self.run!
-      count = 0
-
       loop do
         break if done?
 
@@ -12,9 +10,9 @@ module Sym
           message = Sym::Message.new(MultiJson.decode(message))
 
           Sym::Worker.new.perform(message, DEFAULT)
+        else
+          sleep(1)
         end
-
-        sleep(1)
       end
     end
 
