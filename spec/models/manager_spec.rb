@@ -18,12 +18,16 @@ describe Sym::Manager do
 
     describe "when there are pending messages" do
       let(:util) { mock(Sym::Util) }
+      let!(:worker) { mock(Sym::Worker, :perform => nil) }
+      let!(:message) { mock(Sym::Message) }
 
       before do
         Sym::Manager.stub(:done?).and_return(false, false, true)
         2.times { Sym::Manager.push(Sym::Util, :length, [1,2,3]) }
 
         Sym::Util.stub(:new).and_return(util)
+        Sym::Message.stub(:new).and_return(message)
+        Sym::Worker.stub(:new).and_return(worker)
       end
 
       it "should not sleep" do
@@ -32,8 +36,9 @@ describe Sym::Manager do
         Sym::Manager.run!
       end
 
-      it "should process the pending messages" do
-        util.should_receive(:length).twice.with(1,2,3)
+      it "should ask a new worker to process the message" do
+        Sym::Manager.stub(:done?).and_return(false, true)
+        worker.should_receive(:perform).with(message, Sym::Queue::DEFAULT)
 
         Sym::Manager.run!
       end

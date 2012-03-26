@@ -9,7 +9,7 @@ module Sym
         if (message = Sym.redis.with {|redis| redis.lpop(DEFAULT) })
           message = Sym::Message.new(MultiJson.decode(message))
 
-          Sym::Worker.new.perform(message, DEFAULT)
+          Sym::Worker.new.perform(message, Sym::Queue::DEFAULT)
         else
           sleep(1)
         end
