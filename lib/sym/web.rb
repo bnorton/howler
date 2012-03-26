@@ -16,9 +16,6 @@ module Sym
     end
 
     get "/queues" do
-      Sym::Queue.new("hey")
-      Sym::Queue.new("hey_there")
-
       @queues = (Sym.redis.with {|redis| redis.smembers(Sym::Queue::INDEX) }).collect do |queue|
         Sym::Queue::new(queue)
       end
