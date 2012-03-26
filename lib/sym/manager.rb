@@ -24,7 +24,7 @@ module Sym
       Sym::Queue.new(queue_name)
 
       message = MultiJson.encode(
-        :class => klass,
+        :class => klass.to_s,
         :method => method,
         :args => args,
         :created_at => Time.now.to_f

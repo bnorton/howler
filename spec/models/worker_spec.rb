@@ -38,22 +38,4 @@ describe Sym::Worker do
       subject.perform(@message, "AQueue")
     end
   end
-#  describe "included" do
-#    let(:target) do
-#      class Animal
-#        def initialize(type)
-#          @type = type
-#          @friends = []
-#        end
-#
-#        def make_friends(friend)
-#          @friends << friend
-#        end
-#      end
-#    end
-#
-#    it "should " do
-#      pending
-#    end
-#  end
 end

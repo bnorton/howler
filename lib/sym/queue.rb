@@ -17,7 +17,7 @@ module Sym
       Sym.redis.with {|redis| redis.hincrby(name, "#{klass}:#{method}", 1) } if method
 
       metadata = {
-        :class => klass,
+        :class => klass.to_s,
         :method => method,
         :args => args,
         :time => {},
