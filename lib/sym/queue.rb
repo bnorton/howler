@@ -5,9 +5,9 @@ module Sym
 
     attr_reader :id, :name, :created_at
 
-    def initialize(iden = DEFAULT)
-      @id = iden
-      @name = "queues:" + iden
+    def initialize(identifier = DEFAULT)
+      @id = identifier
+      @name = "queues:" + identifier
 
       after_initialize
     end
@@ -15,7 +15,7 @@ module Sym
     def push(message)
       message = MultiJson.encode(message)
 
-      Sym.redis.with {|redis| redis.rpush(Sym::Manager::DEFAULT, message) }
+      !!Sym.redis.with {|redis| redis.rpush(Sym::Manager::DEFAULT, message) }
     end
 
     def statistics(klass = nil, method = nil, args = nil, created_at = nil, &block)

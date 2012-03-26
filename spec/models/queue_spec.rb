@@ -64,6 +64,20 @@ describe Sym::Queue do
 
       subject.push(message)
     end
+
+    it "should return true" do
+      Sym.send(:_redis).stub(:rpush).and_return(1)
+
+      subject.push(message).should == true
+    end
+
+    describe "when the message cannot be pushed" do
+      it "should return false" do
+        Sym.send(:_redis).stub(:rpush).and_return(0)
+
+        subject.push(message).should == true
+      end
+    end
   end
 
   describe "#success" do

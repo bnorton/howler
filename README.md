@@ -3,11 +3,7 @@
 
 #####Sym uses actors to processes messages.
 - By taking advantage of actors as the processing primitive, thread safety is built-in
-- Actors act similar to a message queue out of the box so understanding the system is straightforward.
-
-#####A shared queueing model ensures that messages are processed on time.
-- Add messages to a shared queue to make sure that no single message is processed more frequent than every x seconds (ensure a rate limit is not exceeded.
-- Messages can have queue-level priority
+- Actors are similar to a message queue out of the box so understanding the system is straightforward.
 
 ###The Web Client
 ######Provides deep introspection into the state of the queues.
@@ -15,16 +11,18 @@
 ####Aggregate:
 - Current throughput
 - Success/Error rates
-- Set global configuration (retry count, log information level)
-- Set queue priority
+- Set global configuration (retry count, log level)
 
 ####Per Queue
-- Current Message being processed
+- View Pending, Current and Processed messages
 - Success/Error rates
 - Average time-to-completion
-- Set the retry interval.
-- Retry or Delete failed jobs
 - A list of recent exceptions and back traces
+
+####Per Message
+- Introspect the message (class, method, arguments, created at)
+- System and Observed Runtime
+- Run, Retry or Delete the message
 
 ```ruby
 class Worker
@@ -41,9 +39,9 @@ end
 
 ...
 
-# Then make calls to 'async_' prefixed methods (defined on the class)
+# Then make calls to 'async_' prefixed class methods
 
 Worker.async_fetch_content
-#=> nil # Returns immediately
+#=> true # Returns immediately
 
 Worker.async_new_user_email(user)
