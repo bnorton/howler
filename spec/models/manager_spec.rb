@@ -84,20 +84,26 @@ describe Sym::Manager do
   end
 
   describe ".push" do
+    let!(:queue) { Sym::Queue.new(Sym::Manager::DEFAULT) }
+
     def create_message(klass, method, args)
       {
-        :class => klass,
+        :class => klass.to_s,
         :method => method,
         :args => args,
         :created_at => Time.now.to_f
       }
     end
 
+    before do
+      Sym::Queue.stub(:new).and_return(queue)
+    end
+
     describe "when given a class, method, and name" do
       it "should push a message" do
         Timecop.freeze(DateTime.now) do
-          message = create_message(Array, :length, [1234])
-          Sym.send(:_redis).should_receive(:rpush).with(anything, MultiJson.encode(message))
+          message = create_message("Array", :length, [1234])
+          queue.should_receive(:push).with(message)
 
           Sym::Manager.push(Array, :length, [1234])
         end
@@ -111,11 +117,11 @@ describe Sym::Manager do
     end
 
     describe "when specifying a queue" do
-      let(:message) { MultiJson.encode(create_message(Array, :length, [1234])) }
+      let(:message) { create_message(Array, :length, [1234]) }
 
       it "should push to the default queue" do
         Timecop.freeze(DateTime.now) do
-          Sym.send(:_redis).should_receive(:rpush).with(Sym::Manager::DEFAULT, message)
+          queue.should_receive(:push).with(message)
 
           Sym::Manager.push(Array, :length, [1234])
         end
@@ -124,13 +130,14 @@ describe Sym::Manager do
       describe "when given the queue parameter" do
         it "should push to pending:(given queue)" do
           Timecop.freeze(DateTime.now) do
-            Sym.send(:_redis).should_receive(:rpush).with("pending:a_queue", message)
+            Sym::Queue.should_receive(:new).with("pending:a_queue")
+            queue.should_receive(:push).with(message)
 
             Sym::Manager.push(Array, :length, [1234], "a_queue")
           end
         end
 
-        it "should add the queue to the set of queues" do
+        it "should create a new queue with the given queue" do
           Sym::Queue.should_receive(:new).with("pending:a_queue")
 
           Sym::Manager.push(Array, :length, [1234], "a_queue")

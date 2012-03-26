@@ -19,16 +19,16 @@ module Sym
     def self.push(klass, method, args, queue_name = DEFAULT)
       queue_name = ("pending:" + queue_name) unless /pending:/ === queue_name
 
-      Sym::Queue.new(queue_name)
+      queue = Sym::Queue.new(queue_name)
 
-      message = MultiJson.encode(
+      message = {
         :class => klass.to_s,
         :method => method,
         :args => args,
         :created_at => Time.now.to_f
-      )
+      }
 
-      Sym.redis.with {|redis| redis.rpush(queue_name, message) }
+      queue.push(message)
     end
 
     def self.done?

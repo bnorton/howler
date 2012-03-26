@@ -45,6 +45,27 @@ describe Sym::Queue do
     end
   end
 
+  describe "#push" do
+    let!(:message) { mock(Sym::Message) }
+    let!(:encoded_message) { mock("JSON:Sym::Message") }
+
+    before do
+      MultiJson.stub(:encode).and_return(encoded_message)
+    end
+
+    it "should JSON encode the message" do
+      MultiJson.should_receive(:encode).with(message)
+
+      subject.push(message)
+    end
+
+    it "should push the message into redis" do
+      Sym.send(:_redis).should_receive(:rpush).with(subject.id, encoded_message)
+
+      subject.push(message)
+    end
+  end
+
   describe "#success" do
     before do
       2.times { subject.statistics { lambda {} } }

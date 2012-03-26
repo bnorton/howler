@@ -12,6 +12,12 @@ module Sym
       after_initialize
     end
 
+    def push(message)
+      message = MultiJson.encode(message)
+
+      Sym.redis.with {|redis| redis.rpush(id, message) }
+    end
+
     def statistics(klass = nil, method = nil, args = nil, created_at = nil, &block)
       Sym.redis.with {|redis| redis.hincrby(name, klass.to_s, 1) } if klass
       Sym.redis.with {|redis| redis.hincrby(name, "#{klass}:#{method}", 1) } if method
