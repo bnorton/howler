@@ -60,7 +60,7 @@ describe Sym::Queue do
     end
 
     it "should push the message into redis" do
-      Sym.send(:_redis).should_receive(:rpush).with(subject.id, encoded_message)
+      Sym.send(:_redis).should_receive(:rpush).with(Sym::Manager::DEFAULT, encoded_message)
 
       subject.push(message)
     end

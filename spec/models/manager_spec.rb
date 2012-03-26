@@ -115,34 +115,5 @@ describe Sym::Manager do
         end
       end
     end
-
-    describe "when specifying a queue" do
-      let(:message) { create_message(Array, :length, [1234]) }
-
-      it "should push to the default queue" do
-        Timecop.freeze(DateTime.now) do
-          queue.should_receive(:push).with(message)
-
-          Sym::Manager.push(Array, :length, [1234])
-        end
-      end
-
-      describe "when given the queue parameter" do
-        it "should push to pending:(given queue)" do
-          Timecop.freeze(DateTime.now) do
-            Sym::Queue.should_receive(:new).with("pending:a_queue")
-            queue.should_receive(:push).with(message)
-
-            Sym::Manager.push(Array, :length, [1234], "a_queue")
-          end
-        end
-
-        it "should create a new queue with the given queue" do
-          Sym::Queue.should_receive(:new).with("pending:a_queue")
-
-          Sym::Manager.push(Array, :length, [1234], "a_queue")
-        end
-      end
-    end
   end
 end

@@ -15,7 +15,7 @@ module Sym
     def push(message)
       message = MultiJson.encode(message)
 
-      Sym.redis.with {|redis| redis.rpush(id, message) }
+      Sym.redis.with {|redis| redis.rpush(Sym::Manager::DEFAULT, message) }
     end
 
     def statistics(klass = nil, method = nil, args = nil, created_at = nil, &block)
@@ -48,7 +48,7 @@ module Sym
     end
 
     def pending_messages
-      Sym.redis.with {|redis| redis.lrange("pending:#{id}", 0, 100) }.collect do |message|
+      Sym.redis.with {|redis| redis.lrange(Sym::Manager::DEFAULT, 0, 100) }.collect do |message|
         MultiJson.decode(message)
       end
     end

@@ -3,7 +3,7 @@ require "spec_helper"
 describe "web" do
   include Capybara::DSL
 
-  let!(:queue) { Sym::Queue.new("a_queue") }
+  let!(:queue) { Sym::Queue.new() }
 
   describe "#index" do
     it "should have a navigation bar" do
@@ -60,7 +60,7 @@ describe "web" do
       end
 
       [[Thread, :current, [3456]]].each do |(klass, method, args)|
-        Sym::Manager.push(klass, method, args, queue.id)
+        Sym::Manager.push(klass, method, args)
       end
     end
 
