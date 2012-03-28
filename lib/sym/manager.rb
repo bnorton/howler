@@ -6,8 +6,14 @@ module Sym
       loop do
         break if done?
 
-        if (message = Sym.redis.with {|redis| redis.lpop(DEFAULT) })
-          message = Sym::Message.new(MultiJson.decode(message))
+        messages = Sym.redis.with do |redis|
+          m = redis.zrange(DEFAULT, 0, 0)
+          redis.zremrangebyrank(DEFAULT, 0, 0)
+          m
+        end
+
+        if messages && messages.length > 0
+          message = Sym::Message.new(MultiJson.decode(messages.first))
 
           Sym::Worker.new.perform(message, Sym::Queue::DEFAULT)
         else

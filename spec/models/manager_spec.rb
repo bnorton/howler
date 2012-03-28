@@ -36,6 +36,13 @@ describe Sym::Manager do
         Sym::Manager.run!
       end
 
+      it "should remove the message from redis" do
+        Sym.send(:_redis).should_receive(:zrange).twice
+        Sym.send(:_redis).should_receive(:zremrangebyrank).twice
+
+        Sym::Manager.run!
+      end
+
       it "should ask a new worker to process the message" do
         Sym::Manager.stub(:done?).and_return(false, true)
         worker.should_receive(:perform).with(message, Sym::Queue::DEFAULT)

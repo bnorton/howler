@@ -27,9 +27,16 @@ end
 class Change
   attr_accessor :queue
   def length_by(amount)
-    before = Sym.send(:_redis).llen(queue)
-    yield
-    (Sym.send(:_redis).llen(queue) - before).should == amount
+    redis = Sym.send(:_redis)
+
+    [:llen, :zcard].each do |method|
+      begin
+        before = redis.send(method, queue)
+        yield
+        return (redis.send(method, queue) - before).should == amount
+      rescue RuntimeError
+      end
+    end
   end
 end
 def should_change(queue)

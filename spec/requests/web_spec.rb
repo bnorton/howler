@@ -103,12 +103,6 @@ describe "web" do
             page.should have_content(value)
           end
         end
-
-        #within ".table tbody" do
-        #  %w(Array length 2345 Sym::Message::Failed 1.5 1.7).each do |value|
-        #    page.should have_content(value)
-        #  end
-        #end
       end
     end
   end
@@ -196,12 +190,6 @@ describe "web" do
             page.should have_content(value)
           end
         end
-
-        #within ".table tbody" do
-        #  %w(Array length 2345 Sym::Message::Failed 1.5 1.7).each do |value|
-        #    page.should have_content(value)
-        #  end
-        #end
       end
     end
   end

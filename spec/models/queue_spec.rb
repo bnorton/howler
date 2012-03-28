@@ -60,22 +60,24 @@ describe Sym::Queue do
     end
 
     it "should push the message into redis" do
-      Sym.send(:_redis).should_receive(:rpush).with(Sym::Manager::DEFAULT, encoded_message)
+      Timecop.freeze(DateTime.now) do
+        Sym.send(:_redis).should_receive(:zadd).with(Sym::Manager::DEFAULT, Time.now.to_f, encoded_message)
 
-      subject.push(message)
+        subject.push(message)
+      end
     end
 
     it "should return true" do
-      Sym.send(:_redis).stub(:rpush).and_return(1)
+      Sym.send(:_redis).stub(:zadd).and_return(1)
 
       subject.push(message).should == true
     end
 
     describe "when the message cannot be pushed" do
       it "should return false" do
-        Sym.send(:_redis).stub(:rpush).and_return(0)
+        Sym.send(:_redis).stub(:zadd).and_return(0)
 
-        subject.push(message).should == true
+        subject.push(message).should == false
       end
     end
   end
@@ -303,7 +305,7 @@ describe Sym::Queue do
 
       it "should retry the message five minutes later" do
         Timecop.freeze(DateTime.now) do
-          Sym.send(:_redis).should_receive(:zadd).with("queues:default", (Time.now + 5.minutes).to_f, anything)
+          Sym.send(:_redis).should_receive(:zadd).with("pending:default", (Time.now + 5.minutes).to_f, anything)
 
           subject.statistics(&block)
         end
@@ -318,7 +320,7 @@ describe Sym::Queue do
 
       it "should retry the message at the specified time" do
         Timecop.freeze(DateTime.now) do
-          Sym.send(:_redis).should_receive(:zadd).with("queues:default", 60.0, anything)
+          Sym.send(:_redis).should_receive(:zadd).with("pending:default", 60.0, anything)
 
           subject.statistics(&block)
         end
@@ -333,7 +335,7 @@ describe Sym::Queue do
 
         it "should retry the message until it reaches the the ttl" do
           Timecop.freeze(DateTime.now) do
-            Sym.send(:_redis).should_not_receive(:zadd).with("queues:default", anything, anything)
+            Sym.send(:_redis).should_not_receive(:zadd).with("pending:default", anything, anything)
 
             subject.statistics(&block)
           end

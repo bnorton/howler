@@ -15,7 +15,7 @@ module Sym
     def push(message)
       message = MultiJson.encode(message)
 
-      !!Sym.redis.with {|redis| redis.rpush(Sym::Manager::DEFAULT, message) }
+      Sym.redis.with {|redis| redis.zadd(Sym::Manager::DEFAULT, Time.now.to_f, message) } != 0
     end
 
     def immediate(message)
@@ -43,11 +43,8 @@ module Sym
         metadata.merge!(:time => parse_time(time))
 
         Sym.redis.with {|redis| redis.hincrby(name, "success", 1) }
-      rescue Sym::Message::Retry => e_retry
-        metadata[:status] = 'retry'
-        unless e_retry.ttl != 0 && e_retry.ttl < Time.now
-          Sym.redis.with {|redis| redis.zadd(name, e_retry.at.to_f, MultiJson.encode(metadata))}
-        end
+      rescue Sym::Message::Retry => e
+        requeue(metadata, e)
       rescue Exception => e
         metadata[:status] = 'error'
         Sym.redis.with {|redis| redis.hincrby(name, "error", 1) }
@@ -57,7 +54,7 @@ module Sym
     end
 
     def pending_messages
-      Sym.redis.with {|redis| redis.lrange(Sym::Manager::DEFAULT, 0, 100) }.collect do |message|
+      Sym.redis.with {|redis| redis.zrange(Sym::Manager::DEFAULT, 0, 100) }.collect do |message|
         MultiJson.decode(message)
       end
     end
@@ -81,6 +78,13 @@ module Sym
     end
 
     private
+
+    def requeue(message, e)
+      message[:status] = 'retry'
+      unless e.ttl != 0 && e.ttl < Time.now
+        Sym.redis.with {|redis| redis.zadd(Sym::Manager::DEFAULT, e.at.to_f, MultiJson.encode(message))}
+      end
+    end
 
     def after_initialize
       Sym.redis.with do |redis|
