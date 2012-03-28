@@ -1,5 +1,6 @@
 <div style="margin-top: 40px;" class="message_list">
-  <div class="table stable-striped">
+  <div class="table_title">Pending Messages</div>
+  <div class="table stable-striped table-bordered">
     <table>
       <thead>
       <tr>
@@ -16,7 +17,7 @@
         <tr>
           <td><%= message['class'] %></td>
           <td><%= message['method'] %></td>
-          <td><%= message['args'] %></td>
+          <td class="args"><%= message['args'] %></td>
           <td><%= Sym::Util.at(message['created_at']) %></td>
           <td>pending</td>
         </tr>

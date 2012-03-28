@@ -1,5 +1,5 @@
 <div style="margin-top: 70px;" class="queues">
-  <div class="table stable-striped">
+  <div class="table table-striped table-bordered">
     <table>
       <thead>
       <tr>
@@ -17,7 +17,7 @@
           <td><%= queue.id %></td>
           <td><%= queue.created_at %></td>
           <td><%= queue.success %></td>
-          <td><%= queue.error %></td>
+          <td class="error"><%= queue.error %></td>
           <td><a href="/queues/<%= queue.id %>">More...</a></td>
         </tr>
       <% end %>

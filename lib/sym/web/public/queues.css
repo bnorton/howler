@@ -1,4 +1,19 @@
 .queue .title {
   margin-top: 80px;
-  margin-left: 20px;
+  margin-left: 30px;
+}
+
+.table_title {
+  margin-left: 30px;
+  line-height: 22px;
+  font-size: 20px;
+  font-weight: bold;
+}
+
+.table {
+  margin: 30px;
+}
+
+td.args{
+  max-width: 175px;
 }

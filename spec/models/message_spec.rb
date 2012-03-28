@@ -48,4 +48,24 @@ describe Sym::Message do
       subject.args.should == [1234]
     end
   end
+
+  describe "#created_at" do
+    describe "when initialized" do
+      it "should be the initialization time" do
+        Timecop.freeze(DateTime.now) do
+          subject.created_at.should == Time.now
+        end
+      end
+    end
+
+    describe "when given the created time" do
+      subject { Sym::Message.new('created_at' => Time.now - 5.minutes, 'class' => 'Sym', 'method' => '') }
+
+      it "should be the given time" do
+        Timecop.freeze(DateTime.now) do
+          subject.created_at.should == Time.now - 5.minutes
+        end
+      end
+    end
+  end
 end

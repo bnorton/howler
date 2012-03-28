@@ -31,6 +31,10 @@ module Sym
       erb :queue_show
     end
 
+    get "/messages" do
+      erb :messages_index
+    end
+
     helpers do
     end
   end

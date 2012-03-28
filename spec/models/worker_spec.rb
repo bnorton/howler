@@ -37,5 +37,11 @@ describe Sym::Worker do
 
       subject.perform(@message, "AQueue")
     end
+
+    it "should use the specified queue" do
+      Sym::Queue.should_not_receive(:new)
+
+      subject.perform(@message, queue)
+    end
   end
 end

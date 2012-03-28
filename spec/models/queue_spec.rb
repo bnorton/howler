@@ -80,6 +80,18 @@ describe Sym::Queue do
     end
   end
 
+  describe "#immediate" do
+    let!(:worker) { mock(Sym::Worker) }
+    let(:message) { mock(Sym::Message, :klass => 1, :method => 2, :args => 3, :created_at => 4) }
+
+    it "should perform the method now" do
+      Sym::Worker.should_receive(:new).and_return(worker)
+      worker.should_receive(:perform).with(message, subject)
+
+      subject.immediate(message)
+    end
+  end
+
   describe "#success" do
     before do
       2.times { subject.statistics { lambda {} } }
@@ -115,20 +127,21 @@ describe Sym::Queue do
     end
 
     it "should store metadata about each message" do
+      now = Time.now
+      Time.stub(:now).and_return(now)
+
       Benchmark.stub(:measure).and_return(benchmark)
 
-      Timecop.freeze(DateTime.now) do
-        metadata = MultiJson.encode(
-          :class => "Array",
-          :method => "length",
-          :args => 1234,
-          :time => { :system => 0.5, :user => 1.1 },
-          :created_at => nil,
-          :status => 'success'
-        )
+      metadata = MultiJson.encode(
+        :class => "Array",
+        :method => "length",
+        :args => 1234,
+        :time => { :system => 0.5, :user => 1.1 },
+        :created_at => nil,
+        :status => 'success'
+      )
 
-        Sym.send(:_redis).should_receive(:zadd).with("#{subject.name}:messages", Time.now.to_i, metadata)
-      end
+      Sym.send(:_redis).should_receive(:zadd).with("#{subject.name}:messages", now.to_f, metadata)
 
       subject.statistics(Array, :length, 1234, &block)
     end
@@ -274,6 +287,55 @@ describe Sym::Queue do
 
               subject.processed_messages.first['status'].should == 'error'
             end
+          end
+        end
+      end
+    end
+  end
+
+  describe "#requeue" do
+    let(:block) { lambda {} }
+
+    describe "the default behavior" do
+      before do
+        block.stub(:call).and_raise(Sym::Message::Retry)
+      end
+
+      it "should retry the message five minutes later" do
+        Timecop.freeze(DateTime.now) do
+          Sym.send(:_redis).should_receive(:zadd).with("queues:default", (Time.now + 5.minutes).to_f, anything)
+
+          subject.statistics(&block)
+        end
+      end
+    end
+
+    describe "when the worker encounters an retry-able error" do
+      before do
+        block.stub(:call).and_raise(Sym::Message::Retry)
+        Sym::Message::Retry.any_instance.stub(:at).and_return(60)
+      end
+
+      it "should retry the message at the specified time" do
+        Timecop.freeze(DateTime.now) do
+          Sym.send(:_redis).should_receive(:zadd).with("queues:default", 60.0, anything)
+
+          subject.statistics(&block)
+        end
+      end
+
+      describe "when the exception specifies a time to live" do
+        let!(:message_retry) { Sym::Message::Retry.new(:ttl => -1.minutes) }
+
+        before do
+          block.stub(:call).and_raise(message_retry)
+        end
+
+        it "should retry the message until it reaches the the ttl" do
+          Timecop.freeze(DateTime.now) do
+            Sym.send(:_redis).should_not_receive(:zadd).with("queues:default", anything, anything)
+
+            subject.statistics(&block)
           end
         end
       end

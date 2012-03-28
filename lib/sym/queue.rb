@@ -18,6 +18,10 @@ module Sym
       !!Sym.redis.with {|redis| redis.rpush(Sym::Manager::DEFAULT, message) }
     end
 
+    def immediate(message)
+      Sym::Worker.new.perform(message, self)
+    end
+
     def statistics(klass = nil, method = nil, args = nil, created_at = nil, &block)
       Sym.redis.with {|redis| redis.hincrby(name, klass.to_s, 1) } if klass
       Sym.redis.with {|redis| redis.hincrby(name, "#{klass}:#{method}", 1) } if method
@@ -39,12 +43,17 @@ module Sym
         metadata.merge!(:time => parse_time(time))
 
         Sym.redis.with {|redis| redis.hincrby(name, "success", 1) }
-      rescue Exception
+      rescue Sym::Message::Retry => e_retry
+        metadata[:status] = 'retry'
+        unless e_retry.ttl != 0 && e_retry.ttl < Time.now
+          Sym.redis.with {|redis| redis.zadd(name, e_retry.at.to_f, MultiJson.encode(metadata))}
+        end
+      rescue Exception => e
         metadata[:status] = 'error'
         Sym.redis.with {|redis| redis.hincrby(name, "error", 1) }
       end
 
-      Sym.redis.with {|redis| redis.zadd("#{name}:messages", Time.now.to_i, MultiJson.encode(metadata))}
+      Sym.redis.with {|redis| redis.zadd("#{name}:messages", Time.now.to_f, MultiJson.encode(metadata))}
     end
 
     def pending_messages

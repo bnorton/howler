@@ -1,10 +1,10 @@
 module Sym
   class Worker
-    def perform(msg, queue_name)
-      queue = Sym::Queue.new(queue_name)
+    def perform(message, queue)
+      queue = Sym::Queue.new(queue) unless queue.is_a?(Sym::Queue)
 
-      queue.statistics(msg.klass, msg.method, msg.args) do
-        msg.klass.new.send(msg.method, *msg.args)
+      queue.statistics(message.klass, message.method, message.args) do
+        message.klass.new.send(message.method, *message.args)
       end
     end
   end

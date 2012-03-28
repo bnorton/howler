@@ -1,6 +1,10 @@
 require "spec_helper"
 
 describe Sym::Message::Retry do
+  it "should inherit from Sym::Message::Error" do
+    Sym::Message::Retry.ancestors.should include(Sym::Message::Error)
+  end
+
   describe "#at" do
     subject { Sym::Message::Retry.new(:at => Time.now.utc + 1.day) }
 
