@@ -10,6 +10,8 @@ require_relative 'sym/manager'
 
 require_relative 'sym/async'
 
+require_relative 'sym/exceptions'
+
 module Sym
   def self.redis
     @connection ||= ConnectionPool.new(:timeout => 1, :size => 5) { _redis }

@@ -37,3 +37,23 @@ def should_change(queue)
   change.queue = queue
   change
 end
+
+module FixnumMethods
+  def minutes
+    self * 60
+  end
+
+  def hours
+    self * 60.minutes
+  end
+
+  def days
+    self * 24.hours
+  end
+
+  alias :minute :minutes
+  alias :hour :hours
+  alias :day :days
+end
+
+Fixnum.send(:include, FixnumMethods)
