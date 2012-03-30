@@ -19,7 +19,7 @@
           <td><%= message['method'] %></td>
           <td class="args"><%= message['args'] %></td>
           <td><%= Sym::Util.at(message['created_at']) %></td>
-          <td>pending</td>
+          <td><%= message['status'] || 'pending' %></td>
         </tr>
       <% end %>
       </tbody>
