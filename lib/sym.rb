@@ -1,12 +1,13 @@
 require 'redis'
 require 'connection_pool'
 
-require_relative 'sym/util'
+require_relative 'sym/support/util'
 
 require_relative 'sym/message'
 require_relative 'sym/queue'
 require_relative 'sym/worker'
 require_relative 'sym/manager'
+require_relative 'sym/runner'
 
 require_relative 'sym/async'
 

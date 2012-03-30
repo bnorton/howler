@@ -1,16 +1,20 @@
 require "spec_helper"
 
 describe Sym::Manager do
-  describe ".run!" do
+  before do
+    subject.stub(:sleep)
+  end
+
+  describe "#run!" do
     describe "when there are no pending messages" do
       class SampleEx < Exception; end
 
       describe "when there are no messages" do
         it "should sleep for one second" do
-          Sym::Manager.should_receive(:sleep).with(1).and_raise(SampleEx)
+          subject.should_receive(:sleep).with(1).and_raise(SampleEx)
 
           expect {
-            Sym::Manager.run!
+            subject.run!
           }.to raise_error(SampleEx)
         end
       end
@@ -22,8 +26,8 @@ describe Sym::Manager do
       let!(:message) { mock(Sym::Message) }
 
       before do
-        Sym::Manager.stub(:done?).and_return(false, false, true)
-        2.times { Sym::Manager.push(Sym::Util, :length, [1,2,3]) }
+        subject.stub(:done?).and_return(false, false, true)
+        2.times { subject.push(Sym::Util, :length, [1,2,3]) }
 
         Sym::Util.stub(:new).and_return(util)
         Sym::Message.stub(:new).and_return(message)
@@ -31,71 +35,71 @@ describe Sym::Manager do
       end
 
       it "should not sleep" do
-        Sym::Manager.should_not_receive(:sleep)
+        subject.should_not_receive(:sleep)
 
-        Sym::Manager.run!
+        subject.run!
       end
 
       it "should remove the message from redis" do
         Sym.send(:_redis).should_receive(:zrange).twice
         Sym.send(:_redis).should_receive(:zremrangebyrank).twice
 
-        Sym::Manager.run!
+        subject.run!
       end
 
       it "should ask a new worker to process the message" do
-        Sym::Manager.stub(:done?).and_return(false, true)
+        subject.stub(:done?).and_return(false, true)
         worker.should_receive(:perform).with(message, Sym::Queue::DEFAULT)
 
-        Sym::Manager.run!
+        subject.run!
       end
     end
   end
 
   describe "[]" do
     before do
-      Sym::Manager.send(:options)[:synchronous] = true
+      subject.send(:options)[:synchronous] = true
     end
 
     it "should configure options" do
-      Sym::Manager[:synchronous].should == true
+      subject[:synchronous].should == true
     end
   end
 
-  describe "[]=" do
+  describe "#[]=" do
     before do
-      Sym::Manager[:synchronous] = true
+      subject[:synchronous] = true
     end
 
     it "should configure options" do
-      Sym::Manager.send(:options)[:synchronous].should == true
+      subject.send(:options)[:synchronous].should == true
     end
   end
 
-  describe ".done?" do
+  describe "#done?" do
     describe "when the done option is set" do
       before do
-        Sym::Manager[:done] = true
+        subject[:done] = true
       end
 
       it "should return true" do
-        Sym::Manager.done?.should == true
+        subject.done?.should == true
       end
     end
 
     describe "when the done option is not set" do
       before do
-        Sym::Manager.send(:options).delete(:done)
+        subject.send(:options).delete(:done)
       end
 
       it "should return false" do
-        Sym::Manager.done?.should == false
+        subject.done?.should == false
       end
     end
 
   end
 
-  describe ".push" do
+  describe "#push" do
     let!(:queue) { Sym::Queue.new(Sym::Manager::DEFAULT) }
 
     def create_message(klass, method, args)
@@ -117,13 +121,13 @@ describe Sym::Manager do
           message = create_message("Array", :length, [1234])
           queue.should_receive(:push).with(message)
 
-          Sym::Manager.push(Array, :length, [1234])
+          subject.push(Array, :length, [1234])
         end
       end
 
       it "should enqueue the message" do
         should_change(Sym::Manager::DEFAULT).length_by(1) do
-          Sym::Manager.push(Array, :length, [1234])
+          subject.push(Array, :length, [1234])
         end
       end
     end

@@ -216,9 +216,10 @@ describe Sym::Queue do
       let!(:benchmark) { "0.1 0.2 0.3 ( 1.1)" }
 
       describe "when there are messages to be processed" do
+        let(:manager) { Sym::Manager.new }
         before do
-          Sym::Manager.push(Array, :length, nil)
-          Sym::Manager.push(Hash, :keys, nil)
+          manager.push(Array, :length, nil)
+          manager.push(Hash, :keys, nil)
         end
 
         it "should return a list of pending messages" do
@@ -227,7 +228,7 @@ describe Sym::Queue do
         end
 
         it "should update when more messages are pushed" do
-          Sym::Manager.push(Thread, :current, nil)
+          manager.push(Thread, :current, nil)
 
           subject.pending_messages.collect {|p| p['class']}.should == %w(Array Hash Thread)
           subject.pending_messages.collect {|p| p['method']}.should == %w(length keys current)

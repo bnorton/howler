@@ -99,7 +99,7 @@ describe "web" do
         queue.statistics(klass, method, args, @time) { lambda {}}
       end
 
-      Sym::Manager.push(Thread, :current, [3456])
+      Sym::Manager.new.push(Thread, :current, [3456])
     end
 
     it "when viewing processed messages" do

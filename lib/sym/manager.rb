@@ -1,8 +1,14 @@
+require 'multi_json'
+
 module Sym
   class Manager
     DEFAULT = "pending:default"
 
-    def self.run!
+    def initialize
+      @options = {}
+    end
+
+    def run!
       loop do
         break if done?
 
@@ -22,7 +28,7 @@ module Sym
       end
     end
 
-    def self.push(klass, method, args)
+    def push(klass, method, args)
       queue = Sym::Queue.new(DEFAULT)
 
       message = {
@@ -35,22 +41,22 @@ module Sym
       queue.push(message)
     end
 
-    def self.done?
-      !!Sym::Manager[:done]
+    def done?
+      !!@options[:done]
     end
 
-    def self.[](key)
-      (@options ||= {})[key]
+    def [](key)
+      @options[key]
     end
 
-    def self.[]=(key, value)
-      (@options ||= {})[key] = value
+    def []=(key, value)
+      @options[key] = value
     end
 
     private
 
-    def self.options
-      @options ||= {}
+    def options
+      @options
     end
   end
 end
