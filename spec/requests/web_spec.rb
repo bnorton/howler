@@ -170,7 +170,7 @@ describe "web" do
         end
 
         within ".table tr" do
-          ["Class", "Method", "Args", "Created At", "Failed At", "Cause"].each do |value|
+          ["Class", "Method", "Args", "Created At", "Failed At", "Cause", "Status"].each do |value|
             page.should have_content(value)
           end
         end
@@ -180,7 +180,7 @@ describe "web" do
             page.should have_content(Sym::Util.at(@time))
           end
 
-          %w(Array length 2345 Sym::Message::Failed).each do |value|
+          %w(Array length 2345 Sym::Message::Failed failed).each do |value|
             page.should have_content(value)
           end
         end
