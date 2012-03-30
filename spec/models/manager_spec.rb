@@ -5,6 +5,12 @@ describe Sym::Manager do
     subject.stub(:sleep)
   end
 
+  describe ".current" do
+    it "should return the current manager instance" do
+      Sym::Manager.current.class.should == Sym::Manager
+    end
+  end
+
   describe "#run!" do
     describe "when there are no pending messages" do
       class SampleEx < Exception; end

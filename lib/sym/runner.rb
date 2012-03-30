@@ -1,7 +1,8 @@
 module Sym
   class Runner
     def run
-      @manager = Sym::Manager.new
+      require "./config/environment.rb"
+      @manager = Sym::Manager.current
 
       begin
         @manager.run!

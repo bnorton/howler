@@ -216,7 +216,7 @@ describe Sym::Queue do
       let!(:benchmark) { "0.1 0.2 0.3 ( 1.1)" }
 
       describe "when there are messages to be processed" do
-        let(:manager) { Sym::Manager.new }
+        let(:manager) { Sym::Manager.current }
         before do
           manager.push(Array, :length, nil)
           manager.push(Hash, :keys, nil)

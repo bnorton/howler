@@ -49,17 +49,24 @@ describe Sym::Async do
     end
 
     describe "storing the message" do
-     describe "when there are no arguments" do
-       it "should register the message" do
-         Sym::Manager.should_receive(:push).with("Worker", :fetch, [])
+      let!(:manager) { Sym::Manager.current }
 
-         Worker.async_fetch
-       end
-     end
+      before do
+        Sym::Manager.stub(:current).and_return(manager)
+      end
+
+      describe "when there are no arguments" do
+        it "should register the message" do
+
+          manager.should_receive(:push).with("Worker", :fetch, [])
+
+          Worker.async_fetch
+        end
+      end
 
       describe "when there are arguments" do
         it "should register the message" do
-          Sym::Manager.should_receive(:push).with("Worker", :fetch, [1, 2, {:key => 'value'}])
+          manager.should_receive(:push).with("Worker", :fetch, [1, 2, {:key => 'value'}])
 
           Worker.async_fetch(1, 2, :key => 'value')
         end

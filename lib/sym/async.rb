@@ -6,7 +6,7 @@ module Sym
       class_eval do
         methods.each do |method|
           define_singleton_method :"async_#{method}" do |*args|
-            Sym::Manager.push(self.to_s, method.to_sym, args)
+            Sym::Manager.current.push(self.to_s, method.to_sym, args)
           end
         end
       end

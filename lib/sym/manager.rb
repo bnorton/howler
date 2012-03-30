@@ -4,6 +4,10 @@ module Sym
   class Manager
     DEFAULT = "pending:default"
 
+    def self.current
+      @current ||= Sym::Manager.new
+    end
+
     def initialize
       @options = {}
     end

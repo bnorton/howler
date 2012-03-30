@@ -1,22 +1,32 @@
 require "spec_helper"
 
 describe Sym::Runner do
+  before do
+    subject.stub(:require)
+  end
+
   describe "#run" do
-    let!(:manager) { Sym::Manager.new }
+    let!(:manager) { Sym::Manager.current }
 
     before do
-      Sym::Manager.stub(:new).and_return(manager)
+      Sym::Manager.stub(:current).and_return(manager)
       manager.stub(:run!)
     end
 
     it "should create a manager" do
-      Sym::Manager.should_receive(:new)
+      Sym::Manager.should_receive(:current)
 
       subject.run
     end
 
     it "should run the manager" do
       manager.should_receive(:run!)
+
+      subject.run
+    end
+
+    it "should load the Rails 3 environment" do
+      subject.should_receive(:require).with("./config/environment.rb")
 
       subject.run
     end
