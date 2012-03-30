@@ -226,7 +226,7 @@ describe Sym::Queue do
           subject.pending_messages.collect {|p| p['method']}.should == %w(length keys)
         end
 
-        it "should updated when more messages are pushed" do
+        it "should update when more messages are pushed" do
           Sym::Manager.push(Thread, :current, nil)
 
           subject.pending_messages.collect {|p| p['class']}.should == %w(Array Hash Thread)
@@ -240,6 +240,24 @@ describe Sym::Queue do
         end
 
         it "should store metadata" do
+          Sym.send(:_redis).should_receive(:zadd).with(subject.name + ":messages", anything, anything)
+
+          subject.statistics(&block)
+        end
+
+        it "should benchmark the runtime" do
+          Benchmark.should_receive(:measure)
+
+          subject.statistics(&block)
+        end
+
+        it "should have the message" do
+          subject.statistics(&block)
+
+          subject.should have(1).processed_messages
+        end
+
+        it "should be a message" do
           subject.statistics(Array, :length, 1234, '10-10', &block)
 
           subject.processed_messages.first.should == {
@@ -252,12 +270,6 @@ describe Sym::Queue do
           }
         end
 
-        it "should benchmark the runtime" do
-          Benchmark.should_receive(:measure)
-
-          subject.statistics(&block)
-        end
-
         it "should include system time" do
           subject.statistics(&block)
 
@@ -268,6 +280,38 @@ describe Sym::Queue do
           subject.statistics(&block)
 
           subject.processed_messages.first['time']['user'].should == 1.1
+        end
+
+        describe "when a message fails" do
+          before do
+            Benchmark.unstub(:measure)
+
+            subject.statistics { raise Sym::Message::Failed }
+          end
+
+          it "should add the messages to the :failed list" do
+            subject.should have(1).failed_messages
+          end
+
+          it "should not add it to the processed messages list" do
+            subject.should have(0).processed_messages
+          end
+
+          it "should log error" do
+            subject.failed_messages.first['status'].should == 'failed'
+          end
+
+          it "should include the failure cause" do
+            subject.failed_messages.first['cause'].should == 'Sym::Message::Failed'
+          end
+
+          it "should include the failed at time" do
+            Timecop.freeze(DateTime.now) do
+              subject.statistics { raise Sym::Message::Failed }
+
+              subject.failed_messages.first['failed_at'].should == Time.now.utc.to_f
+            end
+          end
         end
 
         describe "status" do
@@ -284,10 +328,22 @@ describe Sym::Queue do
               Benchmark.stub(:measure).and_raise
             end
 
-            it "should log success" do
+            it "should log error" do
               subject.statistics(&block)
 
               subject.processed_messages.first['status'].should == 'error'
+            end
+          end
+
+          describe "when the message should retry" do
+            before do
+              Benchmark.unstub(:measure)
+            end
+
+            it "should not add the message to the queue.name:messages list" do
+              Sym.send(:_redis).should_not_receive(:zadd).with(subject.name + ":messages", anything, anything)
+
+              subject.statistics { raise Sym::Message::Retry }
             end
           end
         end

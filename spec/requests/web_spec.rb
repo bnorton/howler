@@ -86,40 +86,20 @@ describe "web" do
     end
   end
 
-  describe "Messages#index" do
-    before do
-      Benchmark.stub(:measure).and_return("1.1 1.3 1.5 ( 1.7)", "2.1 2.3 2.5 ( 2.7)")
-      Array.stub(:length).with(2345).and_raise(Sym::Message::Failed)
-    end
-
-    it "viewing the failed message metadata" do
-      queue.immediate(message)
-
-      visit "/messages"
-
-      within "#failed_messages" do
-        within ".table tr" do
-          ["Class", "Method", "Args", "Created At", "Failed At", "Cause", "System Runtime", "Real Runtime"].each do |value|
-            page.should have_content(value)
-          end
-        end
-      end
-    end
-  end
-
   describe "Queues#show" do
     before do
-      Benchmark.stub(:measure).and_return("1.1 1.3 1.5 ( 1.7)", "2.1 2.3 2.5 ( 2.7)")
       Timecop.travel(DateTime.now)
       @time = Time.now.to_f
+
+      queue.statistics(Fiber, :yield, [4567], @time) { raise Sym::Message::Retry }
+
+      Benchmark.stub(:measure).and_return("1.1 1.3 1.5 ( 1.7)", "2.1 2.3 2.5 ( 2.7)")
 
       [[Hash, :keys, [1234]], [Array, :length, [2345]]].each do |(klass, method, args)|
         queue.statistics(klass, method, args, @time) { lambda {}}
       end
 
-      [[Thread, :current, [3456]]].each do |(klass, method, args)|
-        Sym::Manager.push(klass, method, args)
-      end
+      Sym::Manager.push(Thread, :current, [3456])
     end
 
     it "when viewing processed messages" do
@@ -170,15 +150,19 @@ describe "web" do
           %w(Thread current 3456 pending).each do |value|
             page.should have_content(value)
           end
+
+          %w(Fiber yield 4567 retrying).each do |value|
+            page.should have_content(value)
+          end
         end
       end
     end
 
-    it "viewing the failed message metadata" do
-      Array.stub(:length).with(2345).and_raise(Sym::Message::Failed)
-      queue.immediate(message)
+    it "when viewing failed messages" do
+      Benchmark.unstub(:measure)
+      queue.statistics(Array, :length, [2345], @time) { raise Sym::Message::Failed }
 
-      visit "/messages"
+      visit "/queues/#{queue.id}"
 
       within "#failed_messages" do
         within ".table_title" do
@@ -186,7 +170,17 @@ describe "web" do
         end
 
         within ".table tr" do
-          ["Class", "Method", "Args", "Created At", "Failed At", "Cause", "System Runtime", "Real Runtime"].each do |value|
+          ["Class", "Method", "Args", "Created At", "Failed At", "Cause"].each do |value|
+            page.should have_content(value)
+          end
+        end
+
+        within ".table tbody" do
+          within ".failed_at" do
+            page.should have_content(Sym::Util.at(@time))
+          end
+
+          %w(Array length 2345 Sym::Message::Failed).each do |value|
             page.should have_content(value)
           end
         end

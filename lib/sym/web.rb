@@ -27,12 +27,9 @@ module Sym
       @queue = Sym::Queue::new(params[:queue_id])
       @messages = @queue.processed_messages
       @pending = @queue.pending_messages
+      @failed = @queue.failed_messages
 
       erb :queue_show
-    end
-
-    get "/messages" do
-      erb :messages_index
     end
 
     helpers do

@@ -1,4 +1,4 @@
-<div style="margin-top: 80px;" class="message_list">
+<div style="margin-top: 30px;" class="message_list">
   <div class="table_title">Failed Messages</div>
   <div class="table stable-striped table-bordered">
     <table>
@@ -14,7 +14,17 @@
         <th>Real Runtime</th>
       </tr>
       </thead>
-
+      <% @failed.each do |message| %>
+        <tr>
+          <td><%= message['class'] %></td>
+          <td><%= message['method'] %></td>
+          <td class="args"><%= message['args'] %></td>
+          <td><%= Sym::Util.at(message['created_at']) %></td>
+          <td class="failed_at"><%= Sym::Util.at(message['failed_at']) %></td>
+          <td><%= message['cause'] %></td>
+          <td><%= message['status'] %></td>
+        </tr>
+      <% end %>
       <tbody>
       </tbody>
     </table>

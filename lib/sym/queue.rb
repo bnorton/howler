@@ -39,18 +39,18 @@ module Sym
         time = Benchmark.measure do
           block.call
         end
-
         metadata.merge!(:time => parse_time(time))
-
         Sym.redis.with {|redis| redis.hincrby(name, "success", 1) }
       rescue Sym::Message::Retry => e
         requeue(metadata, e)
+      rescue Sym::Message::Failed => e
+        failed(metadata, e)
       rescue Exception => e
         metadata[:status] = 'error'
         Sym.redis.with {|redis| redis.hincrby(name, "error", 1) }
       end
 
-      Sym.redis.with {|redis| redis.zadd("#{name}:messages", Time.now.to_f, MultiJson.encode(metadata))}
+      Sym.redis.with {|redis| redis.zadd("#{name}:messages", Time.now.to_f, MultiJson.encode(metadata)) } if %w(success error).include?(metadata[:status])
     end
 
     def pending_messages
@@ -61,6 +61,12 @@ module Sym
 
     def processed_messages
       Sym.redis.with {|redis| redis.zrange("#{name}:messages", 0, 100) }.collect do |message|
+        MultiJson.decode(message)
+      end
+    end
+
+    def failed_messages
+      Sym.redis.with {|redis| redis.zrange("#{name}:messages:failed", 0, 100) }.collect do |message|
         MultiJson.decode(message)
       end
     end
@@ -80,10 +86,17 @@ module Sym
     private
 
     def requeue(message, e)
-      message[:status] = 'retry'
+      message[:status] = 'retrying'
       unless e.ttl != 0 && e.ttl < Time.now
         Sym.redis.with {|redis| redis.zadd(Sym::Manager::DEFAULT, e.at.to_f, MultiJson.encode(message))}
       end
+    end
+
+    def failed(message, e)
+      message[:status] = 'failed'
+      message[:cause] = e.class.name
+      message[:failed_at] = Time.now.to_f
+      Sym.redis.with {|redis| redis.zadd("#{name}:messages:failed", Time.now.to_f, MultiJson.encode(message)) }
     end
 
     def after_initialize
