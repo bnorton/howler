@@ -13,7 +13,7 @@
 --------------------
 1. `gem 'howler'`.
 2. `bundle install`.
-3. From the root of the Rails project run `howl`.
+3. From the root of the Rails project run `howler`.
 
 Queueing Interface
 ```ruby
