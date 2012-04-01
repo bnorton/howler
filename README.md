@@ -1,47 +1,61 @@
-# SYM
-###An Asynchronous Message Processing Library for Ruby
+# Howler
+###An asynchronous message queue that's always chewing on something.
+--------------------
 
-#####Sym uses actors to processes messages.
-- By taking advantage of actors as the processing primitive, thread safety is built-in
-- Actors are similar to a message queue out of the box so understanding the system is straightforward.
+#####Advantages
+- Simple message queueing interface.
+- Powerful and Fine-grained message retry logic.
+- Dashboard for managing and tracking message processing.
+- No need for an external Exception Notification Service.
+--------------------
 
-###The Web Client
-######Provides deep introspection into the state of the queues.
+###Usage
+--------------------
+1. `gem 'howler'`.
+2. `bundle install`.
+3. From the root of the Rails project run `howl`.
 
-####Aggregate:
-- Current throughput
-- Success/Error rates
-- Set global configuration (retry count, log level)
-
-####Per Queue
-- View Pending, Current and Processed messages
-- Success/Error rates
-- Average time-to-completion
-- A list of recent exceptions and back traces
-
-####Per Message
-- Introspect the message (class, method, arguments, created at)
-- System and Observed Runtime
-- Run, Retry or Delete the message
-
+Queueing Interface
 ```ruby
-class Worker
-  async :fetch_content, :new_user_email
+class User [< ActiveRecord::Base]
+  async :fetch_content
 
-  def fetch_content
-    ...
-  end
-
-  def self.new_user_email(user)
+  def self.fetch_content(user_id)
     ...
   end
 end
 
-...
+User.async_fetch_content(user.id)
+#=> true
+```
 
-# Then make calls to 'async_' prefixed class methods
+Message Retry Handling
+- Retry a message every minute for up to 10 minutes
 
-Worker.async_fetch_content
-#=> true # Returns immediately
+```ruby
+  def self.fetch_content(user_id)
+    user = User.find(user_id)
 
-Worker.async_new_user_email(user)
+    unless user.fetchable?
+      raise Howler::Message::Retry(:after => 1.minute, :ttl => 10.minutes)
+    end
+
+    ... # fetch content
+  end
+```
+
+Dashboard
+In Development:
+  Global settings management.
+  Change the default message retry handling.
+  Increase or Decrease the number of workers.
+  Explicitly retry, delete, or reschedule messages
+  Change the log-level (seeing higher error rates, so switch to the debug level)
+
+Get rid of your Exception Notifier
+In Development:
+  Simply raise a Howler::Message::Notify exception
+  Raise with custom attributes and Howler will take care of the rest.
+  The Exception Notification tab will give you access to errors in real-time.
+
+Technical Details

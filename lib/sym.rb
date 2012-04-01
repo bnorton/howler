@@ -2,6 +2,7 @@ require 'redis'
 require 'connection_pool'
 
 require_relative 'sym/support/util'
+require_relative 'sym/support/logger'
 
 require_relative 'sym/message'
 require_relative 'sym/queue'

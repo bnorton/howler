@@ -7,6 +7,7 @@ require 'capybara'
 require 'capybara/dsl'
 
 require 'multi_json'
+require 'logger'
 
 require 'sym'
 require 'sym/async'
