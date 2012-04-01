@@ -7,15 +7,16 @@
 - Powerful and Fine-grained message retry logic.
 - Dashboard for managing and tracking message processing.
 - No need for an external Exception Notification Service.
+
 --------------------
 
 ###Usage
---------------------
 1. `gem 'howler'`.
 2. `bundle install`.
 3. From the root of the Rails project run `howler`.
 
-Queueing Interface
+####Queueing Interface
+
 ```ruby
 class User [< ActiveRecord::Base]
   async :fetch_content
@@ -29,7 +30,7 @@ User.async_fetch_content(user.id)
 #=> true
 ```
 
-Message Retry Handling
+####Message Retry Handling
 - Retry a message every minute for up to 10 minutes
 
 ```ruby
@@ -44,18 +45,17 @@ Message Retry Handling
   end
 ```
 
-Dashboard
-In Development:
-  Global settings management.
-  Change the default message retry handling.
-  Increase or Decrease the number of workers.
-  Explicitly retry, delete, or reschedule messages
-  Change the log-level (seeing higher error rates, so switch to the debug level)
+####Dashboard (In Development)
+--------------------
+- Global settings management.
+- Change the default message retry handling.
+- Increase or Decrease the number of workers.
+- Explicitly retry, delete, or reschedule messages
+- Change the log-level (seeing higher error rates, so switch to the debug level)
 
-Get rid of your Exception Notifier
-In Development:
-  Simply raise a Howler::Message::Notify exception
-  Raise with custom attributes and Howler will take care of the rest.
-  The Exception Notification tab will give you access to errors in real-time.
+#####Get rid of your Exception Notifier (In Development)
+--------------------
+- Simply raise a Howler::Message::Notify exception
+- Raise with custom attributes and Howler will take care of the rest.
+- The Exception Notification tab will give you access to errors in real-time.
 
-Technical Details
