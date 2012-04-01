@@ -9,26 +9,26 @@ require 'capybara/dsl'
 require 'multi_json'
 require 'logger'
 
-require 'sym'
-require 'sym/async'
-require 'sym/web'
+require 'howler'
+require 'howler/async'
+require 'howler/web'
 
 # Comment this out if you need to run request specs in a browser
 Capybara.default_driver = :selenium
 
-Capybara.app = Sym::Web
+Capybara.app = Howler::Web
 
 RSpec.configure do |config|
   config.mock_with :rspec
 
   config.before(:each) do
-    Sym.send(:_redis).flushall
+    Howler.send(:_redis).flushall
   end
 end
 class Change
   attr_accessor :queue
   def length_by(amount)
-    redis = Sym.send(:_redis)
+    redis = Howler.send(:_redis)
 
     [:llen, :zcard].each do |method|
       begin

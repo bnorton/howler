@@ -1,4 +1,4 @@
-module Sym
+module Howler
   class Util
     def self.now
       Time.now.strftime("%b %d %Y %H:%M:%S")

@@ -1,7 +1,7 @@
-module Sym
+module Howler
   class Worker
     def perform(message, queue)
-      queue = Sym::Queue.new(queue) unless queue.is_a?(Sym::Queue)
+      queue = Howler::Queue.new(queue) unless queue.is_a?(Howler::Queue)
 
       queue.statistics(message.klass, message.method, message.args) do
         message.klass.new.send(message.method, *message.args)

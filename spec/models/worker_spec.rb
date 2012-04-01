@@ -1,37 +1,37 @@
 require 'spec_helper'
 
-describe Sym::Worker do
+describe Howler::Worker do
   describe "#perform" do
-    let!(:queue) { Sym::Queue.new }
+    let!(:queue) { Howler::Queue.new }
 
     def build_message
-      Sym::Message.new(
-        "class" => "Sym",
+      Howler::Message.new(
+        "class" => "Howler",
         "method" => "length",
         "args" => [1234]
       )
     end
 
     before do
-      Sym::Queue.stub(:new).and_return(queue)
+      Howler::Queue.stub(:new).and_return(queue)
       @message = build_message
     end
 
     it "should setup a Queue with the given queue name" do
-      Sym::Queue.should_receive(:new).with("AQueue")
+      Howler::Queue.should_receive(:new).with("AQueue")
 
       subject.perform(@message, "AQueue")
     end
 
     it "should log statistics" do
-      queue.should_receive(:statistics).with(Sym, :length, [1234])
+      queue.should_receive(:statistics).with(Howler, :length, [1234])
 
       subject.perform(@message, "AQueue")
     end
 
     it "should execute the given message" do
-      array = mock(Sym)
-      Sym.should_receive(:new).and_return(array)
+      array = mock(Howler)
+      Howler.should_receive(:new).and_return(array)
 
       array.should_receive(:length).with(1234)
 
@@ -39,7 +39,7 @@ describe Sym::Worker do
     end
 
     it "should use the specified queue" do
-      Sym::Queue.should_not_receive(:new)
+      Howler::Queue.should_not_receive(:new)
 
       subject.perform(@message, queue)
     end

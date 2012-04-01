@@ -1,5 +1,5 @@
-<div style="margin-top: 30px;" class="message_list">
-  <div class="table_title">Failed Messages</div>
+<div style="margin-top: 40px;" class="message_list">
+  <div class="table_title">Pending Messages</div>
   <div class="table stable-striped table-bordered">
     <table>
       <thead>
@@ -8,23 +8,20 @@
         <th>Method</th>
         <th>Args</th>
         <th>Created At</th>
-        <th>Failed At</th>
-        <th>Cause</th>
         <th>Status</th>
       </tr>
       </thead>
-      <% @failed.each do |message| %>
+
+      <tbody>
+      <% @pending.each do |message| %>
         <tr>
           <td><%= message['class'] %></td>
           <td><%= message['method'] %></td>
           <td class="args"><%= message['args'] %></td>
-          <td><%= Sym::Util.at(message['created_at']) %></td>
-          <td class="failed_at"><%= Sym::Util.at(message['failed_at']) %></td>
-          <td><%= message['cause'] %></td>
-          <td><%= message['status'] %></td>
+          <td><%= Howler::Util.at(message['created_at']) %></td>
+          <td><%= message['status'] || 'pending' %></td>
         </tr>
       <% end %>
-      <tbody>
       </tbody>
     </table>
   </div>

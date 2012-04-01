@@ -1,13 +1,13 @@
 require "spec_helper"
 
-describe Sym::Manager do
+describe Howler::Manager do
   before do
     subject.stub(:sleep)
   end
 
   describe ".current" do
     it "should return the current manager instance" do
-      Sym::Manager.current.class.should == Sym::Manager
+      Howler::Manager.current.class.should == Howler::Manager
     end
   end
 
@@ -27,17 +27,17 @@ describe Sym::Manager do
     end
 
     describe "when there are pending messages" do
-      let(:util) { mock(Sym::Util) }
-      let!(:worker) { mock(Sym::Worker, :perform => nil) }
-      let!(:message) { mock(Sym::Message) }
+      let(:util) { mock(Howler::Util) }
+      let!(:worker) { mock(Howler::Worker, :perform => nil) }
+      let!(:message) { mock(Howler::Message) }
 
       before do
         subject.stub(:done?).and_return(false, false, true)
-        2.times { subject.push(Sym::Util, :length, [1,2,3]) }
+        2.times { subject.push(Howler::Util, :length, [1,2,3]) }
 
-        Sym::Util.stub(:new).and_return(util)
-        Sym::Message.stub(:new).and_return(message)
-        Sym::Worker.stub(:new).and_return(worker)
+        Howler::Util.stub(:new).and_return(util)
+        Howler::Message.stub(:new).and_return(message)
+        Howler::Worker.stub(:new).and_return(worker)
       end
 
       it "should not sleep" do
@@ -47,15 +47,15 @@ describe Sym::Manager do
       end
 
       it "should remove the message from redis" do
-        Sym.send(:_redis).should_receive(:zrange).twice
-        Sym.send(:_redis).should_receive(:zremrangebyrank).twice
+        Howler.send(:_redis).should_receive(:zrange).twice
+        Howler.send(:_redis).should_receive(:zremrangebyrank).twice
 
         subject.run!
       end
 
       it "should ask a new worker to process the message" do
         subject.stub(:done?).and_return(false, true)
-        worker.should_receive(:perform).with(message, Sym::Queue::DEFAULT)
+        worker.should_receive(:perform).with(message, Howler::Queue::DEFAULT)
 
         subject.run!
       end
@@ -106,7 +106,7 @@ describe Sym::Manager do
   end
 
   describe "#push" do
-    let!(:queue) { Sym::Queue.new(Sym::Manager::DEFAULT) }
+    let!(:queue) { Howler::Queue.new(Howler::Manager::DEFAULT) }
 
     def create_message(klass, method, args)
       {
@@ -118,7 +118,7 @@ describe Sym::Manager do
     end
 
     before do
-      Sym::Queue.stub(:new).and_return(queue)
+      Howler::Queue.stub(:new).and_return(queue)
     end
 
     describe "when given a class, method, and name" do
@@ -132,7 +132,7 @@ describe Sym::Manager do
       end
 
       it "should enqueue the message" do
-        should_change(Sym::Manager::DEFAULT).length_by(1) do
+        should_change(Howler::Manager::DEFAULT).length_by(1) do
           subject.push(Array, :length, [1234])
         end
       end

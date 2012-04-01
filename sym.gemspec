@@ -1,17 +1,17 @@
-require File.expand_path('../lib/sym/support/version', __FILE__)
+require File.expand_path('../lib/howler/support/version', __FILE__)
 
 Gem::Specification.new do |gem|
   gem.authors       = ["Brian Norton"]
   gem.email         = ["brian.nort@gmail.com"]
   gem.description   = gem.summary = "An Asynchronous Message Processing Library for Ruby"
-  gem.homepage      = "http://github.com/bnorton/sym"
+  gem.homepage      = "http://github.com/bnorton/howler"
 
-  gem.executables   = ['sym']
+  gem.executables   = ['howler']
   gem.files         = `git ls-files`.split("\n")
   gem.test_files    = `git ls-files -- spec/*`.split("\n")
-  gem.name          = "sym"
+  gem.name          = "howler"
   gem.require_paths = ["lib"]
-  gem.version       = Sym::VERSION
+  gem.version       = Howler::VERSION
   gem.add_dependency              'redis'
   gem.add_dependency              'celluloid'
   gem.add_dependency              'connection_pool'

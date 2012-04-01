@@ -2,9 +2,9 @@ require "spec_helper"
 
 describe "web" do
   include Capybara::DSL
-  let!(:queue) { Sym::Queue.new }
+  let!(:queue) { Howler::Queue.new }
   let(:message) do
-    Sym::Message.new(
+    Howler::Message.new(
       'class' => 'Array',
       'method' => :length,
       'args' => [2345]
@@ -91,7 +91,7 @@ describe "web" do
       Timecop.travel(DateTime.now)
       @time = Time.now.to_f
 
-      queue.statistics(Fiber, :yield, [4567], @time) { raise Sym::Message::Retry }
+      queue.statistics(Fiber, :yield, [4567], @time) { raise Howler::Message::Retry }
 
       Benchmark.stub(:measure).and_return("1.1 1.3 1.5 ( 1.7)", "2.1 2.3 2.5 ( 2.7)")
 
@@ -99,7 +99,7 @@ describe "web" do
         queue.statistics(klass, method, args, @time) { lambda {}}
       end
 
-      Sym::Manager.current.push(Thread, :current, [3456])
+      Howler::Manager.current.push(Thread, :current, [3456])
     end
 
     it "when viewing processed messages" do
@@ -117,7 +117,7 @@ describe "web" do
         end
 
         within ".table tbody" do
-          page.should have_content(Sym::Util.at(@time))
+          page.should have_content(Howler::Util.at(@time))
 
           %w(Array length 1234 1.5 1.7 success).each do |value|
             page.should have_content(value)
@@ -145,7 +145,7 @@ describe "web" do
         end
 
         within ".table tbody" do
-          page.should have_content(Sym::Util.at(@time))
+          page.should have_content(Howler::Util.at(@time))
 
           %w(Thread current 3456 pending).each do |value|
             page.should have_content(value)
@@ -160,7 +160,7 @@ describe "web" do
 
     it "when viewing failed messages" do
       Benchmark.unstub(:measure)
-      queue.statistics(Array, :length, [2345], @time) { raise Sym::Message::Failed }
+      queue.statistics(Array, :length, [2345], @time) { raise Howler::Message::Failed }
 
       visit "/queues/#{queue.id}"
 
@@ -177,10 +177,10 @@ describe "web" do
 
         within ".table tbody" do
           within ".failed_at" do
-            page.should have_content(Sym::Util.at(@time))
+            page.should have_content(Howler::Util.at(@time))
           end
 
-          %w(Array length 2345 Sym::Message::Failed failed).each do |value|
+          %w(Array length 2345 Howler::Message::Failed failed).each do |value|
             page.should have_content(value)
           end
         end

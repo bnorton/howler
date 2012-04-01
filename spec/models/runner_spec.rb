@@ -1,20 +1,20 @@
 require "spec_helper"
 
-describe Sym::Runner do
+describe Howler::Runner do
   before do
     subject.stub(:require)
   end
 
   describe "#run" do
-    let!(:manager) { Sym::Manager.current }
+    let!(:manager) { Howler::Manager.current }
 
     before do
-      Sym::Manager.stub(:current).and_return(manager)
+      Howler::Manager.stub(:current).and_return(manager)
       manager.stub(:run!)
     end
 
     it "should create a manager" do
-      Sym::Manager.should_receive(:current)
+      Howler::Manager.should_receive(:current)
 
       subject.run
     end

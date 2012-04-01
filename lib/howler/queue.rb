@@ -1,4 +1,4 @@
-module Sym
+module Howler
   class Queue
     INDEX = "queues"
     DEFAULT = "default"
@@ -15,16 +15,16 @@ module Sym
     def push(message)
       message = MultiJson.encode(message)
 
-      Sym.redis.with {|redis| redis.zadd(Sym::Manager::DEFAULT, Time.now.to_f, message) } != 0
+      Howler.redis.with {|redis| redis.zadd(Howler::Manager::DEFAULT, Time.now.to_f, message) } != 0
     end
 
     def immediate(message)
-      Sym::Worker.new.perform(message, self)
+      Howler::Worker.new.perform(message, self)
     end
 
     def statistics(klass = nil, method = nil, args = nil, created_at = nil, &block)
-      Sym.redis.with {|redis| redis.hincrby(name, klass.to_s, 1) } if klass
-      Sym.redis.with {|redis| redis.hincrby(name, "#{klass}:#{method}", 1) } if method
+      Howler.redis.with {|redis| redis.hincrby(name, klass.to_s, 1) } if klass
+      Howler.redis.with {|redis| redis.hincrby(name, "#{klass}:#{method}", 1) } if method
 
       metadata = {
         :class => klass.to_s,
@@ -40,47 +40,47 @@ module Sym
           block.call
         end
         metadata.merge!(:time => parse_time(time))
-        Sym.redis.with {|redis| redis.hincrby(name, "success", 1) }
-      rescue Sym::Message::Retry => e
+        Howler.redis.with {|redis| redis.hincrby(name, "success", 1) }
+      rescue Howler::Message::Retry => e
         requeue(metadata, e)
-      rescue Sym::Message::Failed => e
+      rescue Howler::Message::Failed => e
         failed(metadata, e)
       rescue Exception => e
         metadata[:status] = 'error'
-        Sym.redis.with {|redis| redis.hincrby(name, "error", 1) }
+        Howler.redis.with {|redis| redis.hincrby(name, "error", 1) }
       end
 
-      Sym.redis.with {|redis| redis.zadd("#{name}:messages", Time.now.to_f, MultiJson.encode(metadata)) } if %w(success error).include?(metadata[:status])
+      Howler.redis.with {|redis| redis.zadd("#{name}:messages", Time.now.to_f, MultiJson.encode(metadata)) } if %w(success error).include?(metadata[:status])
     end
 
     def pending_messages
-      Sym.redis.with {|redis| redis.zrange(Sym::Manager::DEFAULT, 0, 100) }.collect do |message|
+      Howler.redis.with {|redis| redis.zrange(Howler::Manager::DEFAULT, 0, 100) }.collect do |message|
         MultiJson.decode(message)
       end
     end
 
     def processed_messages
-      Sym.redis.with {|redis| redis.zrange("#{name}:messages", 0, 100) }.collect do |message|
+      Howler.redis.with {|redis| redis.zrange("#{name}:messages", 0, 100) }.collect do |message|
         MultiJson.decode(message)
       end
     end
 
     def failed_messages
-      Sym.redis.with {|redis| redis.zrange("#{name}:messages:failed", 0, 100) }.collect do |message|
+      Howler.redis.with {|redis| redis.zrange("#{name}:messages:failed", 0, 100) }.collect do |message|
         MultiJson.decode(message)
       end
     end
 
     def success
-      Sym.redis.with {|redis| redis.hget(name, "success") }.to_i
+      Howler.redis.with {|redis| redis.hget(name, "success") }.to_i
     end
 
     def error
-      Sym.redis.with {|redis| redis.hget(name, "error") }.to_i
+      Howler.redis.with {|redis| redis.hget(name, "error") }.to_i
     end
 
     def created_at
-      @created_at ||= Time.at(Sym.redis.with {|redis| redis.hget(name, "created_at") }.to_i)
+      @created_at ||= Time.at(Howler.redis.with {|redis| redis.hget(name, "created_at") }.to_i)
     end
 
     private
@@ -88,7 +88,7 @@ module Sym
     def requeue(message, e)
       message[:status] = 'retrying'
       unless e.ttl != 0 && e.ttl < Time.now
-        Sym.redis.with {|redis| redis.zadd(Sym::Manager::DEFAULT, e.at.to_f, MultiJson.encode(message))}
+        Howler.redis.with {|redis| redis.zadd(Howler::Manager::DEFAULT, e.at.to_f, MultiJson.encode(message))}
       end
     end
 
@@ -96,11 +96,11 @@ module Sym
       message[:status] = 'failed'
       message[:cause] = e.class.name
       message[:failed_at] = Time.now.to_f
-      Sym.redis.with {|redis| redis.zadd("#{name}:messages:failed", Time.now.to_f, MultiJson.encode(message)) }
+      Howler.redis.with {|redis| redis.zadd("#{name}:messages:failed", Time.now.to_f, MultiJson.encode(message)) }
     end
 
     def after_initialize
-      Sym.redis.with do |redis|
+      Howler.redis.with do |redis|
         redis.sadd(INDEX, @id)
         redis.hsetnx(name, "created_at", Time.now.to_i)
       end

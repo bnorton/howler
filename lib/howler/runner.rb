@@ -1,8 +1,8 @@
-module Sym
+module Howler
   class Runner
     def run
       require "./config/environment.rb"
-      @manager = Sym::Manager.current
+      @manager = Howler::Manager.current
 
       begin
         @manager.run!

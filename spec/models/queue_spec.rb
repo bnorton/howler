@@ -1,39 +1,39 @@
 require "spec_helper"
 
-describe Sym::Queue do
+describe Howler::Queue do
   it "should identify the list of queues" do
-    Sym::Queue::INDEX.should == "queues"
+    Howler::Queue::INDEX.should == "queues"
   end
 
   it "should default to 'default'" do
-    Sym::Queue::DEFAULT.should == "default"
+    Howler::Queue::DEFAULT.should == "default"
   end
 
   describe ".new" do
     it "should be the default queue" do
-      Sym::Queue.new.name.should == "queues:default"
+      Howler::Queue.new.name.should == "queues:default"
     end
 
     it "should add itself to the list of queues" do
-      Sym::Queue.new("queue_name")
+      Howler::Queue.new("queue_name")
 
-      Sym.redis.with {|redis| redis.smembers(Sym::Queue::INDEX).include?("queue_name").should be_true }
+      Howler.redis.with {|redis| redis.smembers(Howler::Queue::INDEX).include?("queue_name").should be_true }
     end
   end
 
   describe "#id" do
     it "should default to `default`" do
-      Sym::Queue.new.id.should == "default"
+      Howler::Queue.new.id.should == "default"
     end
 
     it "should be the given queue identifier" do
-      Sym::Queue.new("queue_name").id.should == "queue_name"
+      Howler::Queue.new("queue_name").id.should == "queue_name"
     end
   end
 
   describe "#name" do
     it "should be the namespaced queue name that is passed in" do
-      Sym::Queue.new("queue_name").name.should == "queues:queue_name"
+      Howler::Queue.new("queue_name").name.should == "queues:queue_name"
     end
   end
 
@@ -46,8 +46,8 @@ describe Sym::Queue do
   end
 
   describe "#push" do
-    let!(:message) { mock(Sym::Message) }
-    let!(:encoded_message) { mock("JSON:Sym::Message") }
+    let!(:message) { mock(Howler::Message) }
+    let!(:encoded_message) { mock("JSON:Howler::Message") }
 
     before do
       MultiJson.stub(:encode).and_return(encoded_message)
@@ -61,21 +61,21 @@ describe Sym::Queue do
 
     it "should push the message into redis" do
       Timecop.freeze(DateTime.now) do
-        Sym.send(:_redis).should_receive(:zadd).with(Sym::Manager::DEFAULT, Time.now.to_f, encoded_message)
+        Howler.send(:_redis).should_receive(:zadd).with(Howler::Manager::DEFAULT, Time.now.to_f, encoded_message)
 
         subject.push(message)
       end
     end
 
     it "should return true" do
-      Sym.send(:_redis).stub(:zadd).and_return(1)
+      Howler.send(:_redis).stub(:zadd).and_return(1)
 
       subject.push(message).should == true
     end
 
     describe "when the message cannot be pushed" do
       it "should return false" do
-        Sym.send(:_redis).stub(:zadd).and_return(0)
+        Howler.send(:_redis).stub(:zadd).and_return(0)
 
         subject.push(message).should == false
       end
@@ -83,11 +83,11 @@ describe Sym::Queue do
   end
 
   describe "#immediate" do
-    let!(:worker) { mock(Sym::Worker) }
-    let(:message) { mock(Sym::Message, :klass => 1, :method => 2, :args => 3, :created_at => 4) }
+    let!(:worker) { mock(Howler::Worker) }
+    let(:message) { mock(Howler::Message, :klass => 1, :method => 2, :args => 3, :created_at => 4) }
 
     it "should perform the method now" do
-      Sym::Worker.should_receive(:new).and_return(worker)
+      Howler::Worker.should_receive(:new).and_return(worker)
       worker.should_receive(:perform).with(message, subject)
 
       subject.immediate(message)
@@ -143,14 +143,14 @@ describe Sym::Queue do
         :status => 'success'
       )
 
-      Sym.send(:_redis).should_receive(:zadd).with("#{subject.name}:messages", now.to_f, metadata)
+      Howler.send(:_redis).should_receive(:zadd).with("#{subject.name}:messages", now.to_f, metadata)
 
       subject.statistics(Array, :length, 1234, &block)
     end
 
     describe "when given the class" do
       it "should increment the class' total in redis" do
-        Sym.send(:_redis).should_receive(:hincrby).with(subject.name, "Array", 1)
+        Howler.send(:_redis).should_receive(:hincrby).with(subject.name, "Array", 1)
 
         subject.statistics(Array, &block)
       end
@@ -158,11 +158,11 @@ describe Sym::Queue do
 
     describe "when given the method name" do
       before do
-        Sym.send(:_redis).stub(:hincrby)
+        Howler.send(:_redis).stub(:hincrby)
       end
 
       it "should store the method in redis" do
-        Sym.send(:_redis).should_receive(:hincrby).with(subject.name, "Array:length", 1)
+        Howler.send(:_redis).should_receive(:hincrby).with(subject.name, "Array:length", 1)
 
         subject.statistics(Array, :length, &block)
       end
@@ -170,11 +170,11 @@ describe Sym::Queue do
 
     describe "when given arguments" do
       before do
-        Sym.send(:_redis).stub(:hincrby)
+        Howler.send(:_redis).stub(:hincrby)
       end
 
       it "should store the method in redis" do
-        Sym.send(:_redis).should_receive(:hincrby).with(subject.name, "Array:length", 1)
+        Howler.send(:_redis).should_receive(:hincrby).with(subject.name, "Array:length", 1)
 
         subject.statistics(Array, :length, 1234, &block)
       end
@@ -216,7 +216,7 @@ describe Sym::Queue do
       let!(:benchmark) { "0.1 0.2 0.3 ( 1.1)" }
 
       describe "when there are messages to be processed" do
-        let(:manager) { Sym::Manager.current }
+        let(:manager) { Howler::Manager.current }
         before do
           manager.push(Array, :length, nil)
           manager.push(Hash, :keys, nil)
@@ -241,7 +241,7 @@ describe Sym::Queue do
         end
 
         it "should store metadata" do
-          Sym.send(:_redis).should_receive(:zadd).with(subject.name + ":messages", anything, anything)
+          Howler.send(:_redis).should_receive(:zadd).with(subject.name + ":messages", anything, anything)
 
           subject.statistics(&block)
         end
@@ -287,7 +287,7 @@ describe Sym::Queue do
           before do
             Benchmark.unstub(:measure)
 
-            subject.statistics { raise Sym::Message::Failed }
+            subject.statistics { raise Howler::Message::Failed }
           end
 
           it "should add the messages to the :failed list" do
@@ -303,12 +303,12 @@ describe Sym::Queue do
           end
 
           it "should include the failure cause" do
-            subject.failed_messages.first['cause'].should == 'Sym::Message::Failed'
+            subject.failed_messages.first['cause'].should == 'Howler::Message::Failed'
           end
 
           it "should include the failed at time" do
             Timecop.freeze(DateTime.now) do
-              subject.statistics { raise Sym::Message::Failed }
+              subject.statistics { raise Howler::Message::Failed }
 
               subject.failed_messages.first['failed_at'].should == Time.now.utc.to_f
             end
@@ -342,9 +342,9 @@ describe Sym::Queue do
             end
 
             it "should not add the message to the queue.name:messages list" do
-              Sym.send(:_redis).should_not_receive(:zadd).with(subject.name + ":messages", anything, anything)
+              Howler.send(:_redis).should_not_receive(:zadd).with(subject.name + ":messages", anything, anything)
 
-              subject.statistics { raise Sym::Message::Retry }
+              subject.statistics { raise Howler::Message::Retry }
             end
           end
         end
@@ -357,12 +357,12 @@ describe Sym::Queue do
 
     describe "the default behavior" do
       before do
-        block.stub(:call).and_raise(Sym::Message::Retry)
+        block.stub(:call).and_raise(Howler::Message::Retry)
       end
 
       it "should retry the message five minutes later" do
         Timecop.freeze(DateTime.now) do
-          Sym.send(:_redis).should_receive(:zadd).with("pending:default", (Time.now + 5.minutes).to_f, anything)
+          Howler.send(:_redis).should_receive(:zadd).with("pending:default", (Time.now + 5.minutes).to_f, anything)
 
           subject.statistics(&block)
         end
@@ -371,20 +371,20 @@ describe Sym::Queue do
 
     describe "when the worker encounters an retry-able error" do
       before do
-        block.stub(:call).and_raise(Sym::Message::Retry)
-        Sym::Message::Retry.any_instance.stub(:at).and_return(60)
+        block.stub(:call).and_raise(Howler::Message::Retry)
+        Howler::Message::Retry.any_instance.stub(:at).and_return(60)
       end
 
       it "should retry the message at the specified time" do
         Timecop.freeze(DateTime.now) do
-          Sym.send(:_redis).should_receive(:zadd).with("pending:default", 60.0, anything)
+          Howler.send(:_redis).should_receive(:zadd).with("pending:default", 60.0, anything)
 
           subject.statistics(&block)
         end
       end
 
       describe "when the exception specifies a time to live" do
-        let!(:message_retry) { Sym::Message::Retry.new(:ttl => -1.minutes) }
+        let!(:message_retry) { Howler::Message::Retry.new(:ttl => -1.minutes) }
 
         before do
           block.stub(:call).and_raise(message_retry)
@@ -392,7 +392,7 @@ describe Sym::Queue do
 
         it "should retry the message until it reaches the the ttl" do
           Timecop.freeze(DateTime.now) do
-            Sym.send(:_redis).should_not_receive(:zadd).with("pending:default", anything, anything)
+            Howler.send(:_redis).should_not_receive(:zadd).with("pending:default", anything, anything)
 
             subject.statistics(&block)
           end

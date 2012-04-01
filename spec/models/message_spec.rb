@@ -1,8 +1,8 @@
 require "spec_helper"
 
-describe Sym::Message do
+describe Howler::Message do
   subject do
-    Sym::Message.new(
+    Howler::Message.new(
       "class" => "Array",
       "method" => "length",
       "args" => [1234]
@@ -13,19 +13,19 @@ describe Sym::Message do
     describe "requirements" do
       it "should require a class" do
         expect {
-          Sym::Message.new("method" => 'hey')
+          Howler::Message.new("method" => 'hey')
         }.to raise_error(NoMethodError)
       end
 
       it "should require a valid class" do
         expect {
-          Sym::Message.new("class" => 'a', "method" => 'hey')
+          Howler::Message.new("class" => 'a', "method" => 'hey')
         }.to raise_error(NameError)
       end
 
       it "should require a method" do
         expect {
-          Sym::Message.new("class" => 'Array')
+          Howler::Message.new("class" => 'Array')
         }.to raise_error(ArgumentError, "A message requires a method")
       end
     end
@@ -59,7 +59,7 @@ describe Sym::Message do
     end
 
     describe "when given the created time" do
-      subject { Sym::Message.new('created_at' => Time.now - 5.minutes, 'class' => 'Sym', 'method' => '') }
+      subject { Howler::Message.new('created_at' => Time.now - 5.minutes, 'class' => 'Howler', 'method' => '') }
 
       it "should be the given time" do
         Timecop.freeze(DateTime.now) do

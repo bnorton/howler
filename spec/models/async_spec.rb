@@ -1,6 +1,6 @@
 require "spec_helper"
 
-describe Sym::Async do
+describe Howler::Async do
   class Worker
     async :fetch, :parse
 
@@ -49,10 +49,10 @@ describe Sym::Async do
     end
 
     describe "storing the message" do
-      let!(:manager) { Sym::Manager.current }
+      let!(:manager) { Howler::Manager.current }
 
       before do
-        Sym::Manager.stub(:current).and_return(manager)
+        Howler::Manager.stub(:current).and_return(manager)
       end
 
       describe "when there are no arguments" do

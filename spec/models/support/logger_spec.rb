@@ -1,6 +1,6 @@
 require "spec_helper"
 
-describe Sym::Logger do
+describe Howler::Logger do
   let!(:logger) { Logger.new(STDOUT) }
 
   before do
@@ -11,19 +11,19 @@ describe Sym::Logger do
     it "should log to stdout" do
       Logger.should_receive(:new).with(STDOUT)
 
-      Sym::Logger.new
+      Howler::Logger.new
     end
 
     it "should use a custom formatter" do
-      logger.should_receive(:formatter=).with(Sym::Logger::DefaultFormatter)
+      logger.should_receive(:formatter=).with(Howler::Logger::DefaultFormatter)
 
-      Sym::Logger.new
+      Howler::Logger.new
     end
 
     describe "when there is log output" do
       it "should use the DefaultFormatter" do
         Timecop.freeze(DateTime.now) do
-          Sym::Logger::DefaultFormatter.should_receive(:call).with(anything, Time.now, anything, "I am Logging!")
+          Howler::Logger::DefaultFormatter.should_receive(:call).with(anything, Time.now, anything, "I am Logging!")
 
           subject.info("I am Logging!")
         end
@@ -74,7 +74,7 @@ describe Sym::Logger do
       end
 
       it "should log debugging information" do
-        Sym::Manager.current[:log] = 'debug'
+        Howler::Manager.current[:log] = 'debug'
 
         logger.should_receive(:info).with("A Logging block from: #<Worker id: 1>\n   DBUG: A pertinent piece of debug information.")
 
@@ -85,7 +85,7 @@ describe Sym::Logger do
 
       describe "when the logging level is set to info" do
         before do
-          Sym::Manager.current[:log] = 'info'
+          Howler::Manager.current[:log] = 'info'
         end
 
         it "should only log information" do
@@ -99,7 +99,7 @@ describe Sym::Logger do
 
       describe "when the logging level is set to debug" do
         before do
-          Sym::Manager.current[:log] = 'debug'
+          Howler::Manager.current[:log] = 'debug'
         end
 
         it "should log information and debugging information" do
@@ -115,11 +115,11 @@ describe Sym::Logger do
   end
 end
 
-describe Sym::Logger::DefaultFormatter do
+describe Howler::Logger::DefaultFormatter do
   describe ".call" do
     it "should have a compact format" do
       Timecop.freeze(DateTime.now) do
-        format = Sym::Logger::DefaultFormatter.call(nil, Time.now, nil, "A Message")
+        format = Howler::Logger::DefaultFormatter.call(nil, Time.now, nil, "A Message")
         format.should =~ /\[#{Time.now.strftime('%Y-%m-%d %H:%I:%M:%9N')}\]/
         format.should =~ /A Message\n/
       end

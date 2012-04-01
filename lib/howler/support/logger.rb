@@ -1,10 +1,10 @@
 require 'logger'
 
-module Sym
+module Howler
   class Logger
     def initialize
       @logger = ::Logger.new(STDOUT)
-      @logger.formatter = Sym::Logger::DefaultFormatter
+      @logger.formatter = Howler::Logger::DefaultFormatter
     end
 
     def info(message)
@@ -26,7 +26,7 @@ module Sym
 
     class Logger::Proxy
       def initialize(who)
-        @type = Sym::Manager.current[:log] || 'info'
+        @type = Howler::Manager.current[:log] || 'info'
         @log = ["A Logging block from: #{who}"]
         @debug = []
       end

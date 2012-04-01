@@ -1,5 +1,5 @@
-module Sym
-  class Message::Retry < Sym::Message::Error
+module Howler
+  class Message::Retry < Howler::Message::Error
     attr_accessor :at, :ttl
 
     def initialize(options = {})

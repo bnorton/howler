@@ -1,11 +1,11 @@
 require 'multi_json'
 
-module Sym
+module Howler
   class Manager
     DEFAULT = "pending:default"
 
     def self.current
-      @current ||= Sym::Manager.new
+      @current ||= Howler::Manager.new
     end
 
     def initialize
@@ -16,16 +16,16 @@ module Sym
       loop do
         break if done?
 
-        messages = Sym.redis.with do |redis|
+        messages = Howler.redis.with do |redis|
           m = redis.zrange(DEFAULT, 0, 0)
           redis.zremrangebyrank(DEFAULT, 0, 0)
           m
         end
 
         if messages && messages.length > 0
-          message = Sym::Message.new(MultiJson.decode(messages.first))
+          message = Howler::Message.new(MultiJson.decode(messages.first))
 
-          Sym::Worker.new.perform(message, Sym::Queue::DEFAULT)
+          Howler::Worker.new.perform(message, Howler::Queue::DEFAULT)
         else
           sleep(1)
         end
@@ -33,7 +33,7 @@ module Sym
     end
 
     def push(klass, method, args)
-      queue = Sym::Queue.new(DEFAULT)
+      queue = Howler::Queue.new(DEFAULT)
 
       message = {
         :class => klass.to_s,

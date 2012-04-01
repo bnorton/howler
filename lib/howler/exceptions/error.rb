@@ -1,4 +1,4 @@
-module Sym
+module Howler
   class Message::Error < Exception
     attr_accessor :message
 

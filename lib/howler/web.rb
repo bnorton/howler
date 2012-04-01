@@ -3,7 +3,7 @@ require_relative ''
 require 'sinatra/base'
 require 'erb'
 
-module Sym
+module Howler
   class Web < Sinatra::Base
     dir = File.dirname(File.expand_path(__FILE__))
 
@@ -16,15 +16,15 @@ module Sym
     end
 
     get "/queues" do
-      @queues = (Sym.redis.with {|redis| redis.smembers(Sym::Queue::INDEX) }).collect do |queue|
-        Sym::Queue::new(queue)
+      @queues = (Howler.redis.with {|redis| redis.smembers(Howler::Queue::INDEX) }).collect do |queue|
+        Howler::Queue::new(queue)
       end
 
       erb :queues_index
     end
 
     get "/queues/:queue_id" do
-      @queue = Sym::Queue::new(params[:queue_id])
+      @queue = Howler::Queue::new(params[:queue_id])
       @messages = @queue.processed_messages
       @pending = @queue.pending_messages
       @failed = @queue.failed_messages
