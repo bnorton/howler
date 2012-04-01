@@ -3,7 +3,7 @@ require File.expand_path('../lib/howler/support/version', __FILE__)
 Gem::Specification.new do |gem|
   gem.authors       = ["Brian Norton"]
   gem.email         = ["brian.nort@gmail.com"]
-  gem.description   = gem.summary = "An Asynchronous Message Processing Library for Ruby"
+  gem.description   = gem.summary = "An Asynchronous Message Queue that's always Chewing on Something"
   gem.homepage      = "http://github.com/bnorton/howler"
 
   gem.executables   = ['howler']
