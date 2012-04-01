@@ -55,7 +55,7 @@ User.async_fetch_content(user.id)
 
 #####Get rid of your Exception Notifier (In Development)
 --------------------
-- Simply raise a Howler::Message::Notify exception
-- Raise with custom attributes and Howler will take care of the rest.
-- The Exception Notification tab will give you access to errors in real-time.
+- Simply raise a `Howler::Message::Notify` exception
+- Raise with custom attributes and `Howler` will take care of the rest.
+- The Notifications tab will give you access to errors in real-time.
 
