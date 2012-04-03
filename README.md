@@ -45,6 +45,22 @@ User.async_fetch_content(user.id)
   end
 ```
 
+####Exception Notification
+- Notify when an external API is down
+
+```ruby
+  def self.fetch_content(user_id)
+    ...
+    begin
+      # Try to fetch /home_timeline for the user
+    rescue Twitter::Error::ServiceUnavailable => error
+      raise Howler::Message::Notify.new(erorr)
+    end
+    
+    ... # process the timeline
+  end
+```
+
 ####Dashboard (In Development)
 --------------------
 - Global settings management.
