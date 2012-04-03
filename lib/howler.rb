@@ -1,6 +1,7 @@
 require 'redis'
 require 'connection_pool'
 
+require_relative 'howler/support/config'
 require_relative 'howler/support/util'
 require_relative 'howler/support/logger'
 

@@ -1,3 +1,5 @@
+Howler::Config[:concurrency] = 1
+
 module Howler
   class Runner
     def run

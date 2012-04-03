@@ -23,8 +23,10 @@ RSpec.configure do |config|
 
   config.before(:each) do
     Howler.send(:_redis).flushall
+    Howler::Config.class_eval("@@options={:concurrency => 1}")
   end
 end
+
 class Change
   attr_accessor :queue
   def length_by(amount)

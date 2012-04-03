@@ -11,13 +11,36 @@ describe Howler::Manager do
     end
   end
 
+  describe ".new" do
+    describe "workers and concurrency" do
+      before do
+        Howler::Config[:concurrency] = 10
+      end
+
+      it "should create workers" do
+        Howler::Worker.should_receive(:new).exactly(10)
+
+        Howler::Manager.new
+      end
+    end
+  end
+
   describe "#run!" do
+    def build_message(klass, method)
+      Howler::Message.new(
+        'class' => klass.to_s,
+        'method' => method,
+        'args' => [],
+        'created_at' => Time.now.to_f
+      )
+    end
+
     describe "when there are no pending messages" do
       class SampleEx < Exception; end
 
       describe "when there are no messages" do
         it "should sleep for one second" do
-          subject.should_receive(:sleep).with(1).and_raise(SampleEx)
+          subject.should_receive(:sleep).and_raise(SampleEx)
 
           expect {
             subject.run!
@@ -27,65 +50,128 @@ describe Howler::Manager do
     end
 
     describe "when there are pending messages" do
-      let(:util) { mock(Howler::Util) }
-      let!(:worker) { mock(Howler::Worker, :perform => nil) }
-      let!(:message) { mock(Howler::Message) }
-
       before do
-        subject.stub(:done?).and_return(false, false, true)
-        2.times { subject.push(Howler::Util, :length, [1,2,3]) }
+        Howler::Config[:concurrency] = 3
+        @workers = 3.times.collect do
+          worker = Howler::Worker.new
+          worker.stub(:perform)
+          worker
+        end
 
-        Howler::Util.stub(:new).and_return(util)
-        Howler::Message.stub(:new).and_return(message)
-        Howler::Worker.stub(:new).and_return(worker)
-      end
+        @messages = {
+          'length' => build_message(Array, :length),
+          'collect' => build_message(Array, :collect),
+          'max' => build_message(Array, :max),
+          'to_s' => build_message(Array, :to_s)
+        }
 
-      it "should not sleep" do
-        subject.should_not_receive(:sleep)
+        %w(length collect max to_s).each do |method|
+          Howler::Message.stub(:new).with(hash_including('method' => method)).and_return(@messages[method])
+        end
 
-        subject.run!
-      end
-
-      it "should remove the message from redis" do
-        Howler.send(:_redis).should_receive(:zrange).twice
-        Howler.send(:_redis).should_receive(:zremrangebyrank).twice
-
-        subject.run!
-      end
-
-      it "should ask a new worker to process the message" do
+        subject.instance_variable_set(:@workers, @workers)
         subject.stub(:done?).and_return(false, true)
-        worker.should_receive(:perform).with(message, Howler::Queue::DEFAULT)
-
-        subject.run!
       end
-    end
-  end
 
-  describe "[]" do
-    before do
-      subject.send(:options)[:synchronous] = true
-    end
+      describe "when there are no messages in the queue" do
+        it "should sleep" do
+          subject.should_receive(:sleep)
 
-    it "should configure options" do
-      subject[:synchronous].should == true
-    end
-  end
+          subject.run!
+        end
+      end
 
-  describe "#[]=" do
-    before do
-      subject[:synchronous] = true
-    end
+      describe "when there is a single message in the queue" do
+        before do
+          subject.push(Array, :length, [])
+        end
 
-    it "should configure options" do
-      subject.send(:options)[:synchronous].should == true
+        it "should not sleep" do
+          subject.should_not_receive(:sleep)
+
+          subject.run!
+        end
+
+        it "should perform the message on a worker" do
+          @workers[0].should_receive(:perform).with(@messages['length'], anything)
+
+          @workers[1].should_not_receive(:perform)
+          @workers[2].should_not_receive(:perform)
+
+          subject.run!
+        end
+      end
+
+      describe "when there are many messages in the queue" do
+        before do
+          [:length, :collect, :max].each do |method|
+            subject.push(Array, method, [])
+          end
+        end
+
+        describe "when there are more workers then messages" do
+          it "should perform all messages" do
+            @workers[0].should_receive(:perform).with(@messages['length'], anything)
+            @workers[1].should_receive(:perform).with(@messages['collect'], anything)
+            @workers[2].should_receive(:perform).with(@messages['max'], anything)
+
+            subject.run!
+          end
+        end
+
+        describe "when there are more messages then workers" do
+          before do
+            subject.stub(:done?).and_return(false, false, true)
+            Howler::Config[:concurrency] = 2
+          end
+
+          it "should only remove as many messages as workers" do
+            @workers[0].should_receive(:perform).with(@messages['length'], anything).ordered
+            @workers[1].should_receive(:perform).with(@messages['collect'], anything)
+
+            @workers[0].should_receive(:perform).with(@messages['max'], anything).ordered
+
+            subject.run!
+          end
+        end
+
+        describe "when messages are queued to be run in the future" do
+          let!(:worker) { mock(Howler::Worker) }
+
+          before do
+            subject.stub(:done?).and_return(false, false, true)
+            Howler::Config[:concurrency] = 4
+            Howler::Worker.should_receive(:new).once.and_return(worker)
+
+            subject.push(Array, :to_s, [], Time.now + 5.minutes)
+          end
+
+          it "should only enqueue messages that are scheduled before now" do
+            Timecop.freeze(Time.now) do
+              @workers[0].should_receive(:perform).with(@messages['length'], anything).ordered
+              @workers[1].should_receive(:perform).with(@messages['collect'], anything)
+              @workers[2].should_receive(:perform).with(@messages['max'], anything)
+              @workers.each_with_index {|w, i| w.should_not_receive(:perform).with(@messages['to_s'], anything) unless i == 0 }
+
+              subject.run!
+
+              subject.stub(:done?).and_return(false, true)
+
+              Timecop.travel(6.minutes) do
+                @workers[0].should_receive(:perform).with(@messages['to_s'], anything).ordered
+                subject.run!
+              end
+            end
+          end
+        end
+      end
     end
   end
 
   describe "#done?" do
     describe "when the done option is set" do
       before do
-        subject[:done] = true
+        subject.instance_variable_set(:@done, true)
       end
 
       it "should return true" do
@@ -95,14 +181,13 @@ describe Howler::Manager do
 
     describe "when the done option is not set" do
       before do
-        subject.send(:options).delete(:done)
+        subject.instance_variable_set(:@done, nil)
       end
 
       it "should return false" do
         subject.done?.should == false
       end
     end
-
   end
 
   describe "#push" do
@@ -125,7 +210,7 @@ describe Howler::Manager do
       it "should push a message" do
         Timecop.freeze(DateTime.now) do
           message = create_message("Array", :length, [1234])
-          queue.should_receive(:push).with(message)
+          queue.should_receive(:push).with(message, Time.now)
 
           subject.push(Array, :length, [1234])
         end
@@ -133,7 +218,15 @@ describe Howler::Manager do
 
       it "should enqueue the message" do
         should_change(Howler::Manager::DEFAULT).length_by(1) do
-          subject.push(Array, :length, [1234])
+          subject.push(Array, :length, [])
+        end
+      end
+    end
+
+    describe "when given the 'wait until' time" do
+      it "should enqueue the message" do
+        should_change(Howler::Manager::DEFAULT).length_by(1) do
+          subject.push(Array, :length, [], Time.now + 5.minutes)
         end
       end
     end

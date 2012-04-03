@@ -26,7 +26,7 @@ module Howler
 
     class Logger::Proxy
       def initialize(who)
-        @type = Howler::Manager.current[:log] || 'info'
+        @type = Howler::Config[:log] || 'info'
         @log = ["A Logging block from: #{who}"]
         @debug = []
       end

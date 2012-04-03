@@ -12,10 +12,10 @@ module Howler
       after_initialize
     end
 
-    def push(message)
+    def push(message, time = Time.now)
       message = MultiJson.encode(message)
 
-      Howler.redis.with {|redis| redis.zadd(Howler::Manager::DEFAULT, Time.now.to_f, message) } != 0
+      Howler.redis.with {|redis| redis.zadd(Howler::Manager::DEFAULT, time.to_f, message) } != 0
     end
 
     def immediate(message)

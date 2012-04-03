@@ -74,7 +74,7 @@ describe Howler::Logger do
       end
 
       it "should log debugging information" do
-        Howler::Manager.current[:log] = 'debug'
+        Howler::Config[:log] = 'debug'
 
         logger.should_receive(:info).with("A Logging block from: #<Worker id: 1>\n   DBUG: A pertinent piece of debug information.")
 
@@ -85,7 +85,7 @@ describe Howler::Logger do
 
       describe "when the logging level is set to info" do
         before do
-          Howler::Manager.current[:log] = 'info'
+          Howler::Config[:log] = 'info'
         end
 
         it "should only log information" do
@@ -99,7 +99,7 @@ describe Howler::Logger do
 
       describe "when the logging level is set to debug" do
         before do
-          Howler::Manager.current[:log] = 'debug'
+          Howler::Config[:log] = 'debug'
         end
 
         it "should log information and debugging information" do

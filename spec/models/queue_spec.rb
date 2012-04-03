@@ -73,6 +73,16 @@ describe Howler::Queue do
       subject.push(message).should == true
     end
 
+    describe "when given a time" do
+      it "should add it with the specified time" do
+        Timecop.freeze(DateTime.now) do
+          Howler.send(:_redis).should_receive(:zadd).with(Howler::Manager::DEFAULT, (Time.now + 5.minutes).to_f, encoded_message)
+
+          subject.push(message, (Time.now + 5.minutes).to_f)
+        end
+      end
+    end
+
     describe "when the message cannot be pushed" do
       it "should return false" do
         Howler.send(:_redis).stub(:zadd).and_return(0)
