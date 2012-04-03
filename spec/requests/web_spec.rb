@@ -16,11 +16,11 @@ describe "web" do
       visit "/"
 
       within "#navigation" do
-        page.should have_content("Home")
+        page.should have_content("Howler")
         page.should have_content("Queues")
-        page.should have_content("Messages")
-        page.should have_content("Workers")
+        page.should have_content("Notifications")
         page.should have_content("Statistics")
+        page.should have_content("Settings")
       end
     end
 
@@ -31,18 +31,11 @@ describe "web" do
       current_path.should == "/queues"
     end
 
-    it "when navigating to Messages#index" do
+    it "when navigating to Notifications#index" do
       visit "/"
-      click_link "Messages"
+      click_link "Notifications"
 
-      current_path.should == "/messages"
-    end
-
-    it "when navigating to Workers#index" do
-      visit "/"
-      click_link "Workers"
-
-      current_path.should == "/workers"
+      current_path.should == "/notifications"
     end
 
     it "when navigating to Statistics#index" do
@@ -50,6 +43,13 @@ describe "web" do
       click_link "Statistics"
 
       current_path.should == "/statistics"
+    end
+
+    it "when navigating to Settings#index" do
+      visit "/"
+      click_link "Settings"
+
+      current_path.should == "/settings"
     end
   end
 
@@ -99,7 +99,7 @@ describe "web" do
         queue.statistics(klass, method, args, @time) { lambda {}}
       end
 
-      Howler::Manager.current.push(Thread, :current, [3456])
+      Howler::Manager.current.push(Logger, :info, [3456])
     end
 
     it "when viewing processed messages" do
@@ -111,7 +111,7 @@ describe "web" do
         end
 
         within ".table tr" do
-          ["Class", "Method", "Args", "Created At", "System Runtime", "Real Runtime", "Status"].each do |value|
+          ["Message", "Created At", "System Runtime", "Real Runtime", "Status"].each do |value|
             page.should have_content(value)
           end
         end
@@ -119,11 +119,11 @@ describe "web" do
         within ".table tbody" do
           page.should have_content(Howler::Util.at(@time))
 
-          %w(Array length 1234 1.5 1.7 success).each do |value|
+          %w(Hash.keys(1234) 1.5 1.7 success).each do |value|
             page.should have_content(value)
           end
 
-          %w(Hash keys 2345 2.5 2.7 success).each do |value|
+          %w(Array.length(2345) 2.5 2.7 success).each do |value|
             page.should have_content(value)
           end
         end
@@ -139,7 +139,7 @@ describe "web" do
         end
 
         within ".table tr" do
-          ["Class", "Method", "Args", "Created At", "Status"].each do |value|
+          ["Message", "Created At", "Status"].each do |value|
             page.should have_content(value)
           end
         end
@@ -147,11 +147,11 @@ describe "web" do
         within ".table tbody" do
           page.should have_content(Howler::Util.at(@time))
 
-          %w(Thread current 3456 pending).each do |value|
+          %w(Logger.info(3456) pending).each do |value|
             page.should have_content(value)
           end
 
-          %w(Fiber yield 4567 retrying).each do |value|
+          %w(Fiber.yield(4567) retrying).each do |value|
             page.should have_content(value)
           end
         end
@@ -170,7 +170,7 @@ describe "web" do
         end
 
         within ".table tr" do
-          ["Class", "Method", "Args", "Created At", "Failed At", "Cause", "Status"].each do |value|
+          ["Message", "Created At", "Failed At", "Cause", "Status"].each do |value|
             page.should have_content(value)
           end
         end
@@ -180,8 +180,38 @@ describe "web" do
             page.should have_content(Howler::Util.at(@time))
           end
 
-          %w(Array length 2345 Howler::Message::Failed failed).each do |value|
+          %w(Array.length(2345) Howler::Message::Failed failed).each do |value|
             page.should have_content(value)
+          end
+        end
+      end
+    end
+  end
+
+  describe "Notifications#index" do
+    describe "when there are notifications" do
+      before do
+        [:length, :collect, :max].each_with_index do |method, i|
+          queue.statistics(Array, method, [i*10]) { raise Howler::Message::Notify.new(generate_exception, :type => method)}
+        end
+
+        visit "/notifications"
+      end
+
+      it "when viewing the notifications table" do
+        within "#notifications" do
+          within ".table tr" do
+            %w(Message Notification Occurred).each do |value|
+              page.should have_content(value)
+            end
+          end
+
+          within ".table tbody" do
+            page.should have_content(Howler::Util.at(@time))
+
+            %w(Array.length(0) Array.collect(10) Array.max(20) notified).each do |value|
+              page.should have_content(value)
+            end
           end
         end
       end

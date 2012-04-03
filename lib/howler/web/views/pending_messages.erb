@@ -4,9 +4,7 @@
     <table>
       <thead>
       <tr>
-        <th>Class</th>
-        <th>Method</th>
-        <th>Args</th>
+        <th>Message</th>
         <th>Created At</th>
         <th>Status</th>
       </tr>
@@ -15,9 +13,7 @@
       <tbody>
       <% @pending.each do |message| %>
         <tr>
-          <td><%= message['class'] %></td>
-          <td><%= message['method'] %></td>
-          <td class="args"><%= message['args'] %></td>
+          <td><%= message['class'] %>.<%= message['method'] %>(<%= process_args(message['args']) %>)</td>
           <td><%= Howler::Util.at(message['created_at']) %></td>
           <td><%= message['status'] || 'pending' %></td>
         </tr>

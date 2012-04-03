@@ -4,9 +4,7 @@
     <table>
       <thead>
       <tr>
-        <th>Class</th>
-        <th>Method</th>
-        <th>Args</th>
+        <th>Message</th>
         <th>Created At</th>
         <th>System Runtime</th>
         <th>Real Runtime</th>
@@ -17,9 +15,7 @@
       <tbody>
       <% @messages.each do |message| %>
         <tr>
-          <td><%= message['class'] %></td>
-          <td><%= message['method'] %></td>
-          <td class="args"><%= message['args'] %></td>
+          <td><%= message['class'] %>.<%= message['method'] %>(<%= message['args'].to_s.gsub(/^\[|\]$/, '') %>)</td>
           <td><%= Howler::Util.at(message['created_at']) %></td>
           <td><%= message['time']['system'] %></td>
           <td><%= message['time']['user'] %></td>

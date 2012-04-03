@@ -45,6 +45,8 @@ module Howler
         requeue(metadata, e)
       rescue Howler::Message::Failed => e
         failed(metadata, e)
+      rescue Howler::Message::Notify => e
+        notify(metadata, e)
       rescue Exception => e
         metadata[:status] = 'error'
         Howler.redis.with {|redis| redis.hincrby(name, "error", 1) }
@@ -67,6 +69,12 @@ module Howler
 
     def failed_messages
       Howler.redis.with {|redis| redis.zrange("#{name}:messages:failed", 0, 100) }.collect do |message|
+        MultiJson.decode(message)
+      end
+    end
+
+    def self.notifications
+      Howler.redis.with {|redis| redis.lrange("notifications", 0, 100) }.collect do |message|
         MultiJson.decode(message)
       end
     end
@@ -97,6 +105,12 @@ module Howler
       message[:cause] = e.class.name
       message[:failed_at] = Time.now.to_f
       Howler.redis.with {|redis| redis.zadd("#{name}:messages:failed", Time.now.to_f, MultiJson.encode(message)) }
+    end
+
+    def notify(message, e)
+      message[:status] = 'notified'
+      message[:exception] = e
+      Howler.redis.with {|redis| redis.lpush("notifications", MultiJson.encode(message)) }
     end
 
     def after_initialize

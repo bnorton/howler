@@ -1,0 +1,24 @@
+<div style="margin-top: 70px;" class="message_list">
+  <div class="table_title"></div>
+  <div class="table stable-striped table-bordered">
+    <table>
+      <thead>
+      <tr>
+        <th>Message</th>
+        <th>Notification</th>
+        <th>Occurred</th>
+      </tr>
+      </thead>
+
+      <tbody>
+      <% @notifications.each do |notification| %>
+        <tr>
+          <td><%= notification['class'] %>.<%= notification['method'] %>(<%= process_args(notification['args']) %>)</td>
+          <td><%= Howler::Util.at(notification['created_at']) %></td>
+          <td><%= notification['status'] %></td>
+        </tr>
+      <% end %>
+      </tbody>
+    </table>
+  </div>
+</div>

@@ -128,7 +128,7 @@ describe Howler::Queue do
     end
   end
 
-  describe "#statistics" do
+  describe "statistics" do
     let(:block) { lambda {} }
     let!(:benchmark) { "0.1 0.3 0.5 ( 1.1)" }
 
@@ -190,7 +190,7 @@ describe Howler::Queue do
       end
     end
 
-    describe "when the given block is successful" do
+    describe "when the block is successful" do
       it "should update the success count" do
         expect {
           subject.statistics(&block)
@@ -204,7 +204,7 @@ describe Howler::Queue do
       end
     end
 
-    describe "when the given block encounters an error" do
+    describe "when the block encounters an error" do
       before do
         block.stub(:call).and_raise(Exception)
       end
@@ -222,140 +222,161 @@ describe Howler::Queue do
       end
     end
 
-    describe "storing the queue's messages" do
-      let!(:benchmark) { "0.1 0.2 0.3 ( 1.1)" }
+    describe "when the block sends a notification" do
+      let(:block) { lambda { raise Howler::Message::Notify.new(generate_exception) }}
 
-      describe "when there are messages to be processed" do
-        let(:manager) { Howler::Manager.current }
-        before do
-          manager.push(Array, :length, nil)
-          manager.push(Hash, :keys, nil)
-        end
+      it "should not error" do
+        expect {
+          subject.statistics(&block)
+        }.not_to raise_error
+      end
 
-        it "should return a list of pending messages" do
-          subject.pending_messages.collect {|p| p['class']}.should == %w(Array Hash)
-          subject.pending_messages.collect {|p| p['method']}.should == %w(length keys)
-        end
-
-        it "should update when more messages are pushed" do
-          manager.push(Thread, :current, nil)
-
-          subject.pending_messages.collect {|p| p['class']}.should == %w(Array Hash Thread)
-          subject.pending_messages.collect {|p| p['method']}.should == %w(length keys current)
+      it "should add the message to notifications" do
+        should_change("notifications").length_by(1) do
+          subject.statistics(&block)
         end
       end
 
-      describe "when messages have been processed" do
+      it "should have a status of notified" do
+        subject.statistics(&block)
+
+        Howler::Queue.notifications.first['status'].should == 'notified'
+      end
+    end
+
+    describe "when there are messages to be processed" do
+      let!(:benchmark) { "0.1 0.2 0.3 ( 1.1)" }
+      let(:manager) { Howler::Manager.current }
+      before do
+        manager.push(Array, :length, nil)
+        manager.push(Hash, :keys, nil)
+      end
+
+      it "should return a list of pending messages" do
+        subject.pending_messages.collect {|p| p['class']}.should == %w(Array Hash)
+        subject.pending_messages.collect {|p| p['method']}.should == %w(length keys)
+      end
+
+      it "should update when more messages are pushed" do
+        manager.push(Thread, :current, nil)
+
+        subject.pending_messages.collect {|p| p['class']}.should == %w(Array Hash Thread)
+        subject.pending_messages.collect {|p| p['method']}.should == %w(length keys current)
+      end
+    end
+
+    describe "when messages have been processed" do
+      let!(:benchmark) { "0.1 0.2 0.3 ( 1.1)" }
+
+      before do
+        Benchmark.stub(:measure).and_return(benchmark)
+      end
+
+      it "should store metadata" do
+        Howler.send(:_redis).should_receive(:zadd).with(subject.name + ":messages", anything, anything)
+
+        subject.statistics(&block)
+      end
+
+      it "should benchmark the runtime" do
+        Benchmark.should_receive(:measure)
+
+        subject.statistics(&block)
+      end
+
+      it "should have the message" do
+        subject.statistics(&block)
+
+        subject.should have(1).processed_messages
+      end
+
+      it "should be a message" do
+        subject.statistics(Array, :length, 1234, '10-10', &block)
+
+        subject.processed_messages.first.should == {
+          'class' => 'Array',
+          'method' => 'length',
+          'args' => 1234,
+          'time' => {'system' => 0.3, 'user' => 1.1},
+          'status' => 'success',
+          'created_at' => '10-10'
+        }
+      end
+
+      it "should include system time" do
+        subject.statistics(&block)
+
+        subject.processed_messages.first['time']['system'].should == 0.3
+      end
+
+      it "should include user time" do
+        subject.statistics(&block)
+
+        subject.processed_messages.first['time']['user'].should == 1.1
+      end
+
+      describe "when a message fails" do
         before do
-          Benchmark.stub(:measure).and_return(benchmark)
+          Benchmark.unstub(:measure)
+
+          subject.statistics { raise Howler::Message::Failed }
         end
 
-        it "should store metadata" do
-          Howler.send(:_redis).should_receive(:zadd).with(subject.name + ":messages", anything, anything)
-
-          subject.statistics(&block)
+        it "should add the messages to the :failed list" do
+          subject.should have(1).failed_messages
         end
 
-        it "should benchmark the runtime" do
-          Benchmark.should_receive(:measure)
-
-          subject.statistics(&block)
+        it "should not add it to the processed messages list" do
+          subject.should have(0).processed_messages
         end
 
-        it "should have the message" do
-          subject.statistics(&block)
-
-          subject.should have(1).processed_messages
+        it "should log error" do
+          subject.failed_messages.first['status'].should == 'failed'
         end
 
-        it "should be a message" do
-          subject.statistics(Array, :length, 1234, '10-10', &block)
-
-          subject.processed_messages.first.should == {
-            'class' => 'Array',
-            'method' => 'length',
-            'args' => 1234,
-            'time' => {'system' => 0.3, 'user' => 1.1},
-            'status' => 'success',
-            'created_at' => '10-10'
-          }
+        it "should include the failure cause" do
+          subject.failed_messages.first['cause'].should == 'Howler::Message::Failed'
         end
 
-        it "should include system time" do
-          subject.statistics(&block)
-
-          subject.processed_messages.first['time']['system'].should == 0.3
-        end
-
-        it "should include user time" do
-          subject.statistics(&block)
-
-          subject.processed_messages.first['time']['user'].should == 1.1
-        end
-
-        describe "when a message fails" do
-          before do
-            Benchmark.unstub(:measure)
-
+        it "should include the failed at time" do
+          Timecop.freeze(DateTime.now) do
             subject.statistics { raise Howler::Message::Failed }
-          end
 
-          it "should add the messages to the :failed list" do
-            subject.should have(1).failed_messages
+            subject.failed_messages.first['failed_at'].should == Time.now.utc.to_f
           end
+        end
+      end
 
-          it "should not add it to the processed messages list" do
-            subject.should have(0).processed_messages
+      describe "status" do
+        describe "when the block is successful" do
+          it "should log success" do
+            subject.statistics(&block)
+
+            subject.processed_messages.first['status'].should == 'success'
+          end
+        end
+
+        describe "when the block fails" do
+          before do
+            Benchmark.stub(:measure).and_raise
           end
 
           it "should log error" do
-            subject.failed_messages.first['status'].should == 'failed'
-          end
+            subject.statistics(&block)
 
-          it "should include the failure cause" do
-            subject.failed_messages.first['cause'].should == 'Howler::Message::Failed'
-          end
-
-          it "should include the failed at time" do
-            Timecop.freeze(DateTime.now) do
-              subject.statistics { raise Howler::Message::Failed }
-
-              subject.failed_messages.first['failed_at'].should == Time.now.utc.to_f
-            end
+            subject.processed_messages.first['status'].should == 'error'
           end
         end
 
-        describe "status" do
-          describe "when the block is successful" do
-            it "should log success" do
-              subject.statistics(&block)
-
-              subject.processed_messages.first['status'].should == 'success'
-            end
+        describe "when the message should retry" do
+          before do
+            Benchmark.unstub(:measure)
           end
 
-          describe "when the block fails" do
-            before do
-              Benchmark.stub(:measure).and_raise
-            end
+          it "should not add the message to the queue.name:messages list" do
+            Howler.send(:_redis).should_not_receive(:zadd).with(subject.name + ":messages", anything, anything)
 
-            it "should log error" do
-              subject.statistics(&block)
-
-              subject.processed_messages.first['status'].should == 'error'
-            end
-          end
-
-          describe "when the message should retry" do
-            before do
-              Benchmark.unstub(:measure)
-            end
-
-            it "should not add the message to the queue.name:messages list" do
-              Howler.send(:_redis).should_not_receive(:zadd).with(subject.name + ":messages", anything, anything)
-
-              subject.statistics { raise Howler::Message::Retry }
-            end
+            subject.statistics { raise Howler::Message::Retry }
           end
         end
       end

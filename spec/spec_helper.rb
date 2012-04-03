@@ -25,6 +25,10 @@ RSpec.configure do |config|
     Howler.send(:_redis).flushall
     Howler::Config.class_eval("@@options={:concurrency => 1}")
   end
+
+  config.after(:suite) do
+    Howler.send(:_redis).flushall
+  end
 end
 
 class Change
@@ -67,3 +71,11 @@ module FixnumMethods
 end
 
 Fixnum.send(:include, FixnumMethods)
+
+def generate_exception(ex = nil)
+  begin
+    raise (ex || Exception)
+  rescue Exception => e
+    e
+  end
+end
