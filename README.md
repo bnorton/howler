@@ -69,6 +69,9 @@ User.async_fetch_content(user.id)
 
     ... # done fetching content
     Howler::Config[user_id] = {:fetched_at => Time.now, :status => 'success'}.to_json
+
+    # Then to delete a key simply assign nil
+    Howler::Config[user_id] = nil
   end
 ```
 

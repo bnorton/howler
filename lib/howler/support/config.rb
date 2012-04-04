@@ -7,8 +7,12 @@ module Howler
     end
 
     def self.[]=(key, value)
+      if value.nil?
+        delete(key)
+        return
+      end
+
       Howler.redis.with {|redis| redis.hset("howler:config", key.to_s, value) }
-      value
     end
 
     def self.flush
@@ -18,6 +22,12 @@ module Howler
           redis.hdel("howler:config", key)
         end
       end
+    end
+
+    private
+
+    def self.delete(key)
+      Howler.redis.with {|redis| redis.hdel("howler:config", key.to_s) }
     end
   end
 end

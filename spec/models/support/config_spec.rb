@@ -23,6 +23,16 @@ describe Howler::Config do
     it "should configure options" do
       Howler.redis.with {|redis| redis.hget("howler:config", "message") }.should == '{"key": 3}'
     end
+
+    describe "when the value is nil" do
+      it "should remove the key" do
+        Howler.redis.with {|redis| redis.hexists("howler:config", "message") }.should == true
+
+        Howler::Config[:message] = nil
+
+        Howler.redis.with {|redis| redis.hexists("howler:config", "message") }.should == false
+      end
+    end
   end
 
   describe ".flush" do
