@@ -11,7 +11,7 @@ module Howler
     def initialize
       @options = {}
 
-      @workers = Howler::Config[:concurrency].times.collect do
+      @workers = Howler::Config[:concurrency].to_i.times.collect do
         Howler::Worker.new
       end
     end
@@ -65,7 +65,7 @@ module Howler
     private
 
     def scale_workers
-      delta = (@workers.size - Howler::Config[:concurrency])
+      delta = (@workers.size - Howler::Config[:concurrency].to_i)
       if delta > 0
         delta.times { @workers.pop }
       elsif delta < 0

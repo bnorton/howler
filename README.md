@@ -7,7 +7,7 @@
 - Powerful and Fine-grained message retry logic.
 - Dashboard for managing and tracking message processing.
 - No need for an external Exception Notification Service.
-
+- Simple Message passing between Actors
 --------------------
 
 ###Usage
@@ -58,6 +58,17 @@ User.async_fetch_content(user.id)
     end
     
     ... # process the timeline
+  end
+```
+
+####Message Passing
+- Pass messages by setting values into the shared configuration (key, value).
+
+```ruby
+  def fetch_content(user_id)
+
+    ... # done fetching content
+    Howler::Config[user_id] = {:fetched_at => Time.now, :status => 'success'}.to_json
   end
 ```
 
