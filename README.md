@@ -69,7 +69,7 @@ User.async_fetch_content(user.id)
 - Explicitly retry, delete, or reschedule messages
 - Change the log-level (seeing higher error rates, so switch to the debug level)
 
-#####Get rid of your Exception Notifier (In Development)
+#####Get rid of your Exception Notifier
 --------------------
 - Simply raise a `Howler::Message::Notify` exception
 - Raise with custom attributes and `Howler` will take care of the rest.
