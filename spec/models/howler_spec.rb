@@ -1,6 +1,37 @@
 require "spec_helper"
 
 describe Howler do
+  describe ".next" do
+    before do
+      Howler.unstub(:next)
+    end
+
+    it "should return a number" do
+      Howler.next(:id).class.should == Fixnum
+    end
+
+    it "should be increase by one" do
+      before = Howler.next(:id)
+
+      (before + 1).should == Howler.next(:id)
+    end
+
+    describe "for multiple keys" do
+      before do
+        Howler.next(:foo)
+      end
+
+      it "should have different counts" do
+        [
+          Howler.next(:id),
+          Howler.next(:id),
+          Howler.next(:foo),
+          Howler.next(:foo)
+        ].should == [1, 2, 2, 3]
+      end
+    end
+  end
+
   describe ".redis" do
     let(:pool) { mock("ConnectionPool2") }
 

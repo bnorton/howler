@@ -2,6 +2,9 @@ require 'redis'
 require 'connection_pool'
 
 module Howler
+  def self.next(id)
+    redis.with {|redis| redis.hincrby("next", id.to_s, 1) }.to_i
+  end
   def self.redis
     @connection ||= ConnectionPool.new(:timeout => 1, :size => 5) { _redis }
   end

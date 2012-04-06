@@ -239,6 +239,7 @@ describe Howler::Manager do
 
     def create_message(klass, method, args)
       {
+        :id => 123,
         :class => klass.to_s,
         :method => method,
         :args => args,
