@@ -3,6 +3,7 @@ require "spec_helper"
 describe Howler::Message do
   subject do
     Howler::Message.new(
+      "id" => 123,
       "class" => "Array",
       "method" => "length",
       "args" => [1234]
@@ -33,6 +34,12 @@ describe Howler::Message do
 
   describe "#klass" do
     it "should return the class literal" do
+      subject.id.should == 123
+    end
+  end
+
+  describe "#klass" do
+    it "should return the class literal" do
       subject.klass.should == Array
     end
   end
@@ -53,7 +60,7 @@ describe Howler::Message do
     describe "when initialized" do
       it "should be the initialization time" do
         Timecop.freeze(DateTime.now) do
-          subject.created_at.should == Time.now
+          subject.created_at.should == Time.now.to_f
         end
       end
     end

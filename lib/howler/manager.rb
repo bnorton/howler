@@ -57,6 +57,7 @@ module Howler
       queue = Howler::Queue.new(DEFAULT)
 
       message = {
+        :id => Howler.next(:id),
         :class => klass.to_s,
         :method => method,
         :args => args,
