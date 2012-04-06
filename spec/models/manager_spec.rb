@@ -1,27 +1,13 @@
 require "spec_helper"
 
 describe Howler::Manager do
-  before do
-    subject.stub(:sleep)
-  end
-
   describe ".current" do
+    before do
+      subject.stub(:sleep)
+    end
+
     it "should return the current manager instance" do
       Howler::Manager.current.class.should == Howler::Manager
-    end
-  end
-
-  describe ".new" do
-    describe "workers and concurrency" do
-      before do
-        Howler::Config[:concurrency] = 10
-      end
-
-      it "should create workers" do
-        Howler::Worker.should_receive(:new).exactly(10)
-
-        Howler::Manager.new
-      end
     end
   end
 
@@ -35,7 +21,23 @@ describe Howler::Manager do
       )
     end
 
+    before do
+      subject.stub(:done?).and_return(true)
+      Howler::Config[:concurrency] = 10
+    end
+
+    it "should create workers" do
+      Howler::Worker.should_receive(:new).exactly(10)
+
+      subject.run!
+    end
+
     describe "when there are no pending messages" do
+      before do
+        subject.stub(:done?).and_return(false, true)
+        subject.stub(:sleep)
+      end
+
       class SampleEx < Exception; end
 
       describe "when there are no messages" do
@@ -51,12 +53,15 @@ describe Howler::Manager do
 
     describe "when there are pending messages" do
       before do
+        Howler::Manager.stub(:current).and_return(subject)
+
         Howler::Config[:concurrency] = 3
+
         @workers = 3.times.collect do
-          worker = Howler::Worker.new
-          worker.stub(:perform)
-          worker
+          mock(Howler::Worker, :perform => nil)
         end
+
+        subject.stub(:build_workers).and_return(@workers)
 
         @messages = {
           'length' => build_message(Array, :length),
@@ -69,7 +74,8 @@ describe Howler::Manager do
           Howler::Message.stub(:new).with(hash_including('method' => method)).and_return(@messages[method])
         end
 
-        subject.instance_variable_set(:@workers, @workers)
+        subject.stub(:sleep)
+
         subject.stub(:done?).and_return(false, true)
       end
 
@@ -93,12 +99,28 @@ describe Howler::Manager do
         end
 
         it "should perform the message on a worker" do
-          @workers[0].should_receive(:perform).with(@messages['length'], anything)
+          @workers[2].should_receive(:perform).with(@messages['length'], Howler::Queue::DEFAULT)
 
+          @workers[0].should_not_receive(:perform)
           @workers[1].should_not_receive(:perform)
-          @workers[2].should_not_receive(:perform)
 
           subject.run!
+        end
+
+        describe "when a message gets taken by a worker" do
+          before do
+            @original_workers = @workers.dup
+          end
+
+          it "should make the worker unavailable" do
+            subject.run!
+
+            subject.should have(2).workers
+            subject.should have(1).chewing
+
+            subject.workers.should == @original_workers.first(2)
+            subject.chewing.should == @original_workers.last(1)
+          end
         end
       end
 
@@ -111,9 +133,9 @@ describe Howler::Manager do
 
         describe "when there are more workers then messages" do
           it "should perform all messages" do
-            @workers[0].should_receive(:perform).with(@messages['length'], anything)
+            @workers[2].should_receive(:perform).with(@messages['length'], anything)
             @workers[1].should_receive(:perform).with(@messages['collect'], anything)
-            @workers[2].should_receive(:perform).with(@messages['max'], anything)
+            @workers[0].should_receive(:perform).with(@messages['max'], anything)
 
             subject.run!
           end
@@ -122,14 +144,15 @@ describe Howler::Manager do
         describe "when there are more messages then workers" do
           before do
             subject.stub(:done?).and_return(false, false, true)
+
             Howler::Config[:concurrency] = 2
           end
 
-          it "should only remove as many messages as workers" do
-            @workers[0].should_receive(:perform).with(@messages['length'], anything).ordered
-            @workers[1].should_receive(:perform).with(@messages['collect'], anything)
+          it "should scale and only remove as many messages as workers" do
+            @workers[0].unstub(:perform)
 
-            @workers[0].should_receive(:perform).with(@messages['max'], anything).ordered
+            @workers[1].should_receive(:perform).with(@messages['length'], anything)
+            @workers[0].should_receive(:perform).with(@messages['collect'], anything)
 
             subject.run!
           end
@@ -141,6 +164,7 @@ describe Howler::Manager do
           before do
             subject.stub(:done?).and_return(false, false, true)
             Howler::Config[:concurrency] = 4
+
             Howler::Worker.should_receive(:new).once.and_return(worker)
 
             subject.push(Array, :to_s, [], Time.now + 5.minutes)
@@ -148,16 +172,15 @@ describe Howler::Manager do
 
           it "should only enqueue messages that are scheduled before now" do
             Timecop.freeze(Time.now) do
-              @workers[0].should_receive(:perform).with(@messages['length'], anything).ordered
-              @workers[1].should_receive(:perform).with(@messages['collect'], anything)
-              @workers[2].should_receive(:perform).with(@messages['max'], anything)
-              @workers.each_with_index {|w, i| w.should_not_receive(:perform).with(@messages['to_s'], anything) unless i == 0 }
+              worker.should_receive(:perform).with(@messages['length'], anything).ordered
+              @workers[2].should_receive(:perform).with(@messages['collect'], anything)
+              @workers[1].should_receive(:perform).with(@messages['max'], anything)
 
               subject.run!
 
               subject.stub(:done?).and_return(false, true)
 
-              Timecop.travel(6.minutes) do
+              Timecop.travel(5.minutes) do
                 @workers[0].should_receive(:perform).with(@messages['to_s'], anything).ordered
                 subject.run!
               end
@@ -165,6 +188,27 @@ describe Howler::Manager do
           end
         end
       end
+    end
+  end
+
+  describe "#shutdown" do
+    before do
+      subject.stub(:done?).and_return(true)
+
+      Howler::Config[:concurrency] = 2
+      subject.instance_variable_set(:@chewing, [mock(Howler::Worker)])
+    end
+
+    it "should remove non active workers from the list" do
+      subject.run!
+
+      subject.should have(2).workers
+      subject.should have(1).chewing
+
+      subject.shutdown.should == 2
+
+      subject.should have(0).workers
+      subject.should have(1).chewing
     end
   end
 

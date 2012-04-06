@@ -4,32 +4,38 @@ module Howler
   class Manager
     DEFAULT = "pending:default"
 
+    attr_reader :workers, :chewing
+
     def self.current
       @current ||= Howler::Manager.new
     end
 
     def initialize
       @options = {}
+      @workers = []
+      @chewing = []
+    end
 
-      @workers = Howler::Config[:concurrency].to_i.times.collect do
-        Howler::Worker.new
-      end
+    def shutdown
+      current_size = @workers.size
+      @workers = []
+      current_size
     end
 
     def run!
+      @workers = build_workers
+
       loop do
         break if done?
         scale_workers
 
-        worker_count = [0, @workers.size - 1].max
-
-        messages = []
+        messages, range_messages = [], []
 
         Howler.redis.with do |redis|
-          range_messages = redis.zrange(DEFAULT, 0, worker_count)
+          range_messages = redis.zrange(DEFAULT, 0, @workers.size - 1) if @workers.size > 0
           messages = redis.zrangebyscore(DEFAULT, '-inf', Time.now.to_f)
 
-          if messages.size > worker_count
+          if messages.size >= @workers.size
             messages = range_messages
           end
 
@@ -38,9 +44,11 @@ module Howler
 
         sleep(1) unless messages.any?
 
-        messages.each_with_index do |message, i|
+        messages.each do |message|
           message = Howler::Message.new(MultiJson.decode(message))
-          @workers[i].perform(message, Howler::Queue::DEFAULT)
+
+          worker = begin_chewing
+          worker.perform(message, Howler::Queue::DEFAULT)
         end
       end
     end
@@ -62,12 +70,30 @@ module Howler
       !!@done
     end
 
+    def done_chewing(worker)
+      worker = @chewing.delete(worker)
+      @workers.push(worker)
+      nil
+    end
+
     private
 
+    def begin_chewing
+      worker = @workers.pop
+      @chewing.push(worker)
+      worker
+    end
+
+    def build_workers
+      Howler::Config[:concurrency].to_i.times.collect do
+        Howler::Worker.new
+      end
+    end
+
     def scale_workers
-      delta = (@workers.size - Howler::Config[:concurrency].to_i)
+      delta = ((@workers.size + @chewing.size) - Howler::Config[:concurrency].to_i)
       if delta > 0
-        delta.times { @workers.pop }
+        [@workers.size, delta].min.times { @workers.pop }
       elsif delta < 0
         delta.abs.times { @workers << Howler::Worker.new }
       end

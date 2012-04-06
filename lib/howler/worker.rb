@@ -6,6 +6,8 @@ module Howler
       queue.statistics(message.klass, message.method, message.args) do
         message.klass.new.send(message.method, *message.args)
       end
+
+      Howler::Manager.current.done_chewing(self)
     end
   end
 end
