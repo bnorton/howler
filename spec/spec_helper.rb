@@ -24,6 +24,7 @@ RSpec.configure do |config|
   config.before(:each) do
     Howler.send(:_redis).flushall
     Howler::Config.class_eval("@@options={:concurrency => 1}")
+    Howler.stub(:next).with(:id).and_return(123)
   end
 
   config.after(:suite) do
