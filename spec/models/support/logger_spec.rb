@@ -57,7 +57,7 @@ describe Howler::Logger do
     describe "when given a block" do
       describe "when on the main process" do
         it "should log to the main process" do
-          logger.should_receive(:info).with("A Logging block from: #<Worker id: 0 name: 'supervisor'>\n   INFO: A supervisor level information bite.")
+          logger.should_receive(:info).with("#<Worker id: 0 name: 'supervisor'>\n   INFO: A supervisor level information bite.")
 
           subject.log do |log|
             log.info("A supervisor level information bite.")
@@ -66,7 +66,7 @@ describe Howler::Logger do
       end
 
       it "should log information" do
-        logger.should_receive(:info).with("A Logging block from: #<Worker id: 1>\n   INFO: A pertinent piece of information.")
+        logger.should_receive(:info).with("#<Worker id: 1>\n   INFO: A pertinent piece of information.")
 
         subject.log(worker) do |log|
           log.info("A pertinent piece of information.")
@@ -76,7 +76,7 @@ describe Howler::Logger do
       it "should log debugging information" do
         Howler::Config[:log] = 'debug'
 
-        logger.should_receive(:info).with("A Logging block from: #<Worker id: 1>\n   DBUG: A pertinent piece of debug information.")
+        logger.should_receive(:info).with("#<Worker id: 1>\n   DBUG: A pertinent piece of debug information.")
 
         subject.log(worker) do |log|
           log.debug("A pertinent piece of debug information.")
@@ -103,7 +103,7 @@ describe Howler::Logger do
         end
 
         it "should log information and debugging information" do
-          logger.should_receive(:info).with("A Logging block from: #<Worker id: 1>\n   INFO: A pertinent piece of information.\n   DBUG: A pertinent piece of debug information.")
+          logger.should_receive(:info).with("#<Worker id: 1>\n   INFO: A pertinent piece of information.\n   DBUG: A pertinent piece of debug information.")
 
           subject.log(worker) do |log|
             log.info("A pertinent piece of information.")

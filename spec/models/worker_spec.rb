@@ -43,5 +43,11 @@ describe Howler::Worker do
 
       subject.perform(@message, queue)
     end
+
+    it "should tell register with the manager when done" do
+      Howler::Manager.current.should_receive(:done_chewing).with(subject)
+
+      subject.perform(@message, "AQueue")
+    end
   end
 end

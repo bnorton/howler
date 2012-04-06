@@ -1,6 +1,6 @@
 module Howler
   class Config
-    WHITELIST = %w(concurrency)
+    WHITELIST = %w(concurrency shutdown_timeout)
 
     def self.[](key)
       Howler.redis.with {|redis| redis.hget("howler:config", key.to_s) }
