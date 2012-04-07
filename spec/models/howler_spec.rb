@@ -32,6 +32,16 @@ describe Howler do
     end
   end
 
+  describe ".args" do
+    it "should remove square brackets" do
+      Howler.args([]).should == ""
+    end
+
+    it "should remove only leading and trailing brackets" do
+      Howler.args([10, {'akey' => 'avalue'}]).should == '10, {"akey"=>"avalue"}'
+    end
+  end
+
   describe ".redis" do
     let(:pool) { mock("ConnectionPool2") }
 
