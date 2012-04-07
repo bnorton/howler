@@ -1,6 +1,14 @@
 require "spec_helper"
 
 describe Howler::Manager do
+  describe ".new" do
+    it "should create a Logger" do
+      Howler::Logger.should_receive(:new)
+
+      Howler::Manager.new
+    end
+  end
+
   describe ".current" do
     before do
       subject.stub(:sleep)
@@ -186,6 +194,46 @@ describe Howler::Manager do
               end
             end
           end
+        end
+      end
+    end
+
+    describe "logging" do
+      let!(:logger) { mock(Howler::Logger) }
+      let!(:log) { mock(Howler::Logger, :info => nil, :debug => nil) }
+
+      before do
+        subject.stub(:done?).and_return(false, true)
+        subject.instance_variable_set(:@logger, logger)
+        logger.stub(:log).and_yield(log)
+
+        [:send_notification, :enforce_avgs].each_with_index do |method, i|
+          subject.push(Array, method, [i, ((i+1)*100).to_s(36)])
+        end
+      end
+
+      describe "information" do
+        before do
+          Howler::Config[:log] = 'info'
+        end
+
+        it "should log the number of messages to be processed" do
+          log.should_receive(:info).with("Processing 2 Messages")
+
+          subject.run!
+        end
+      end
+
+      describe "debug" do
+        before do
+          Howler::Config[:log] = 'debug'
+        end
+
+        it "should show a digest of the messages" do
+          log.should_receive(:debug).with('MESG - Array.new.send_notification(0, "2s")')
+          log.should_receive(:debug).with('MESG - Array.new.enforce_avgs(1, "5k")')
+
+          subject.run!
         end
       end
     end

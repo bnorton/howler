@@ -28,23 +28,21 @@ module Howler
       def initialize(who)
         @type = Howler::Config[:log] || 'info'
         @log = [who.to_s]
-        @debug = []
       end
 
       def info(message)
-        @log << "INFO: #{message.to_s}"
+        @log << "INFO: #{message}"
         true
       end
 
       def debug(message)
-        message = "DBUG: #{message.to_s}"
+        return false if @type != 'debug'
+        message = "DBUG: #{message}"
         @log << message
-        @debug << message
         true
       end
 
       def flush
-        @log = (@log - @debug) unless @type == 'debug'
         return unless @log.size > 1
         @log.join("\n   ")
       end
