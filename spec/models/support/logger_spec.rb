@@ -1,7 +1,7 @@
 require "spec_helper"
 
 describe Howler::Logger do
-  let!(:logger) { Logger.new(STDOUT) }
+  let!(:logger) { mock(Logger, :info => nil, :formatter= => nil) }
 
   before do
     Logger.stub(:new).and_return(logger)
@@ -21,6 +21,12 @@ describe Howler::Logger do
     end
 
     describe "when there is log output" do
+      let!(:logger) { Logger.new(STDOUT) }
+
+      before do
+        Logger.stub(:new).and_return(logger)
+      end
+
       it "should use the DefaultFormatter" do
         Timecop.freeze(DateTime.now) do
           Howler::Logger::DefaultFormatter.should_receive(:call).with(anything, Time.now, anything, "I am Logging!")
@@ -73,17 +79,36 @@ describe Howler::Logger do
         end
       end
 
-      it "should log debugging information" do
-        Howler::Config[:log] = 'debug'
+      describe "debugging" do
+        before do
+          Howler::Config[:log] = 'debug'
+        end
 
-        logger.should_receive(:info).with("#<Worker id: 1>\n   DBUG: A pertinent piece of debug information.")
+        it "should be true" do
+          subject.log(worker) do |log|
+            log.debug("anything").should == true
+          end
+        end
 
-        subject.log(worker) do |log|
-          log.debug("A pertinent piece of debug information.")
+        it "should log debugging information" do
+          logger.should_receive(:info).with("#<Worker id: 1>\n   DBUG: A pertinent piece of debug information.")
+
+          subject.log(worker) do |log|
+            log.debug("A pertinent piece of debug information.")
+          end
+        end
+
+        it "should log information and debugging information" do
+          logger.should_receive(:info).with("#<Worker id: 1>\n   INFO: A pertinent piece of information.\n   DBUG: A pertinent piece of debug information.")
+
+          subject.log(worker) do |log|
+            log.info("A pertinent piece of information.")
+            log.debug("A pertinent piece of debug information.")
+          end
         end
       end
 
-      describe "when the logging level is set to info" do
+      describe "information" do
         before do
           Howler::Config[:log] = 'info'
         end
@@ -95,19 +120,21 @@ describe Howler::Logger do
             log.debug("It's a debug thing.")
           end
         end
-      end
 
-      describe "when the logging level is set to debug" do
-        before do
-          Howler::Config[:log] = 'debug'
-        end
+        describe "when there is debugging" do
+          it "should return false" do
+            subject.log(worker) do |log|
+              log.debug("It's a debug thing.").should == false
+            end
+          end
 
-        it "should log information and debugging information" do
-          logger.should_receive(:info).with("#<Worker id: 1>\n   INFO: A pertinent piece of information.\n   DBUG: A pertinent piece of debug information.")
+          it "should not store the debug string" do
+            subject.log(worker) do |log|
+              log.info("something")
+              log.debug("It's a debug thing.")
 
-          subject.log(worker) do |log|
-            log.info("A pertinent piece of information.")
-            log.debug("A pertinent piece of debug information.")
+              log.flush.should_not match(/It's a debug thing\./)
+            end
           end
         end
       end

@@ -1,7 +1,7 @@
 PATH
   remote: .
   specs:
-    howler (0.1.0)
+    howler (0.2.0)
       celluloid
       connection_pool
       multi_json

@@ -11,6 +11,7 @@ module Howler
     end
 
     def initialize
+      @logger = Howler::Logger.new
       @options = {}
       @workers = []
       @chewing = []
@@ -42,13 +43,18 @@ module Howler
           redis.zremrangebyrank(DEFAULT, 0, messages.size - 1) unless messages.size == 0
         end
 
-        sleep(1) unless messages.any?
+        @logger.log do |log|
+          log.info("Processing #{messages.size} Messages")
 
-        messages.each do |message|
-          message = Howler::Message.new(MultiJson.decode(message))
+          sleep(1) unless messages.any?
 
-          worker = begin_chewing
-          worker.perform(message, Howler::Queue::DEFAULT)
+          messages.each do |message|
+            message = Howler::Message.new(MultiJson.decode(message))
+            log.debug("MESG - #{message.klass}.new.#{message.method}(#{message.args.to_s.gsub(/^\[|\]$/, '')})")
+
+            worker = begin_chewing
+            worker.perform(message, Howler::Queue::DEFAULT)
+          end
         end
       end
     end
