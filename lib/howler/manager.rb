@@ -50,7 +50,7 @@ module Howler
 
           messages.each do |message|
             message = Howler::Message.new(MultiJson.decode(message))
-            log.debug("MESG - #{message.klass}.new.#{message.method}(#{message.args.to_s.gsub(/^\[|\]$/, '')})")
+            log.debug("MESG - #{message.id} #{message.klass}.new.#{message.method}(#{Howler.args(message.args)})")
 
             worker = begin_chewing
             worker.perform(message, Howler::Queue::DEFAULT)
@@ -99,6 +99,8 @@ module Howler
 
     def scale_workers
       delta = ((@workers.size + @chewing.size) - Howler::Config[:concurrency].to_i)
+      return if delta == 0
+
       if delta > 0
         [@workers.size, delta].min.times { @workers.pop }
       elsif delta < 0

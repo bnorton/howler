@@ -8,6 +8,7 @@ module Howler
     def initialize(identifier = DEFAULT)
       @id = identifier
       @name = "queues:" + identifier
+      @logger = Howler::Logger.new
 
       after_initialize
     end
@@ -35,21 +36,27 @@ module Howler
         :status => 'success'
       }
 
-      begin
-        time = Benchmark.measure do
-          block.call
+      @logger.log do |log|
+        begin
+          time = Benchmark.measure do
+            block.call
+          end
+          metadata.merge!(:time => parse_time(time))
+          Howler.redis.with {|redis| redis.hincrby(name, "success", 1) }
+        rescue Howler::Message::Retry => e
+          log.debug("Howler::Message::Retry - #{klass}.new.#{method}(#{Howler.args(args)})")
+          requeue(metadata, e)
+        rescue Howler::Message::Failed => e
+          log.debug("Howler::Message::Failed - #{klass}.new.#{method}(#{Howler.args(args)})")
+          failed(metadata, e)
+        rescue Howler::Message::Notify => e
+          log.debug("Howler::Message::Notify - #{klass}.new.#{method}(#{Howler.args(args)})")
+          notify(metadata, e)
+        rescue Exception => e
+          log.debug("#{e.to_s} - #{klass}.new.#{method}(#{Howler.args(args)})")
+          metadata[:status] = 'error'
+          Howler.redis.with {|redis| redis.hincrby(name, "error", 1) }
         end
-        metadata.merge!(:time => parse_time(time))
-        Howler.redis.with {|redis| redis.hincrby(name, "success", 1) }
-      rescue Howler::Message::Retry => e
-        requeue(metadata, e)
-      rescue Howler::Message::Failed => e
-        failed(metadata, e)
-      rescue Howler::Message::Notify => e
-        notify(metadata, e)
-      rescue Exception => e
-        metadata[:status] = 'error'
-        Howler.redis.with {|redis| redis.hincrby(name, "error", 1) }
       end
 
       Howler.redis.with {|redis| redis.zadd("#{name}:messages", Time.now.to_f, MultiJson.encode(metadata)) } if %w(success error).include?(metadata[:status])

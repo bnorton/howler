@@ -19,6 +19,12 @@ describe Howler::Queue do
 
       Howler.redis.with {|redis| redis.smembers(Howler::Queue::INDEX).include?("queue_name").should be_true }
     end
+
+    it "should have a logger" do
+      Howler::Logger.should_receive(:new)
+
+      Howler::Queue.new
+    end
   end
 
   describe "#id" do
@@ -377,6 +383,105 @@ describe Howler::Queue do
             Howler.send(:_redis).should_not_receive(:zadd).with(subject.name + ":messages", anything, anything)
 
             subject.statistics { raise Howler::Message::Retry }
+          end
+        end
+      end
+    end
+
+    describe "logging" do
+      let!(:logger) { mock(Howler::Logger) }
+      let!(:log) { mock(Howler::Logger, :info => nil, :debug => nil) }
+      let!(:block) { lambda {} }
+
+      before do
+        subject.instance_variable_set(:@logger, logger)
+        logger.stub(:log).and_yield(log)
+      end
+
+      describe "information" do
+        before do
+          Howler::Config[:log] = 'info'
+        end
+
+        it "should log the number of messages to be processed" do
+          log.should_not_receive(:info)
+
+          subject.statistics(&block)
+        end
+      end
+
+      describe "debug" do
+        before do
+          Howler::Config[:log] = 'debug'
+        end
+
+        describe "when the block Fails (explicitly)" do
+          before do
+            block.stub(:call).and_raise(Howler::Message::Failed)
+          end
+
+          it "should log to debugging" do
+            log.should_receive(:debug).with("Howler::Message::Failed - Array.new.send(2)")
+
+            subject.statistics(Array, :send, [2], &block)
+          end
+
+          it "should not log information" do
+            log.should_not_receive(:info)
+
+            subject.statistics(Array, :send, [2], &block)
+          end
+        end
+
+        describe "when the block Retries" do
+          before do
+            block.stub(:call).and_raise(Howler::Message::Retry)
+          end
+
+          it "should log to debugging" do
+            log.should_receive(:debug).with("Howler::Message::Retry - Array.new.send(2)")
+
+            subject.statistics(Array, :send, [2], &block)
+          end
+
+          it "should not log information" do
+            log.should_not_receive(:info)
+
+            subject.statistics(Array, :send, [2], &block)
+          end
+        end
+
+        describe "when the block Notifies" do
+          let(:block) { lambda { raise Howler::Message::Notify.new(:after => 1.minute)} }
+
+          it "should log to debugging" do
+            log.should_receive(:debug).with("Howler::Message::Notify - Array.new.send(2)")
+
+            subject.statistics(Array, :send, [2], &block)
+          end
+
+          it "should not log information" do
+            log.should_not_receive(:info)
+
+            subject.statistics(Array, :send, [2], &block)
+          end
+        end
+
+        describe "when the block fails" do
+          before do
+            block.stub(:call).and_raise(Exception)
+          end
+
+          it "should log to debugging" do
+            log.should_receive(:debug).with("Exception - Array.new.send(2)")
+
+            subject.statistics(Array, :send, [2], &block)
+          end
+
+          it "should not log information" do
+            log.should_not_receive(:info)
+
+            subject.statistics(Array, :send, [2], &block)
           end
         end
       end

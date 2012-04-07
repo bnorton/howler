@@ -230,8 +230,8 @@ describe Howler::Manager do
         end
 
         it "should show a digest of the messages" do
-          log.should_receive(:debug).with('MESG - Array.new.send_notification(0, "2s")')
-          log.should_receive(:debug).with('MESG - Array.new.enforce_avgs(1, "5k")')
+          log.should_receive(:debug).with('MESG - 123 Array.new.send_notification(0, "2s")')
+          log.should_receive(:debug).with('MESG - 123 Array.new.enforce_avgs(1, "5k")')
 
           subject.run!
         end
