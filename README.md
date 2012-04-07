@@ -8,12 +8,13 @@
 - Dashboard for managing and tracking message processing.
 - No need for an external Exception Notification Service.
 - Simple Message passing between Actors
+
 --------------------
 
 ###Usage
 1. `gem 'howler'`.
 2. `bundle install`.
-3. From the root of the Rails project run `howler`.
+3. From the root of the Rails project run `[bundle exec] howler`.
 
 ####Queueing Interface
 
