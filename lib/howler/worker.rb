@@ -1,5 +1,9 @@
+require 'celluloid'
+
 module Howler
   class Worker
+    include Celluloid
+
     def perform(message, queue)
       queue = Howler::Queue.new(queue) unless queue.is_a?(Howler::Queue)
 
@@ -7,7 +11,7 @@ module Howler
         message.klass.new.send(message.method, *message.args)
       end
 
-      Howler::Manager.current.done_chewing(self)
+      Howler::Manager.current.done_chewing(current_actor)
     end
   end
 end

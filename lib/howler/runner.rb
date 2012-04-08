@@ -9,8 +9,10 @@ module Howler
 
       begin
         @manager.run!
+        sleep
       rescue Interrupt
         logger = Howler::Logger.new
+
         still_working = @manager.chewing.size
         shutdown_timeout = Howler::Config[:shutdown_timeout]
 
@@ -22,6 +24,8 @@ module Howler
 
           log.info("INT - Waiting #{shutdown_timeout} seconds for workers to complete.") if still_working > 0
         end
+
+        sleep(shutdown_timeout.to_i) if still_working > 0
 
         logger.info("INT - All workers have shut down - Exiting")
       end
