@@ -16,6 +16,7 @@ module Howler
     end
 
     def initialize
+      @done = false
       @logger = Howler::Logger.new
       @options = {}
       @workers = []
@@ -23,6 +24,7 @@ module Howler
     end
 
     def shutdown
+      @done = true
       current_size = @workers.size
       @workers = []
       current_size
@@ -79,7 +81,7 @@ module Howler
     end
 
     def done?
-      !!@done
+      @done
     end
 
     def done_chewing(worker)

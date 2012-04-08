@@ -261,6 +261,15 @@ describe Howler::Manager do
       subject.wrapped_object.instance_variable_set(:@chewing, [mock(Howler::Worker)])
     end
 
+    it "should not accept more work" do
+      subject.wrapped_object.unstub(:done?)
+      subject.should_not be_done
+
+      subject.shutdown
+
+      subject.should be_done
+    end
+
     it "should remove non active workers from the list" do
       subject.run
 
@@ -271,28 +280,6 @@ describe Howler::Manager do
 
       subject.should have(0).workers
       subject.should have(1).chewing
-    end
-  end
-
-  describe "#done?" do
-    describe "when the done option is set" do
-      before do
-        subject.wrapped_object.instance_variable_set(:@done, true)
-      end
-
-      it "should return true" do
-        subject.done?.should == true
-      end
-    end
-
-    describe "when the done option is not set" do
-      before do
-        subject.wrapped_object.instance_variable_set(:@done, nil)
-      end
-
-      it "should return false" do
-        subject.done?.should == false
-      end
     end
   end
 
