@@ -1,6 +1,12 @@
 require "spec_helper"
 
 describe Howler::Manager do
+  subject { Howler::Manager.new }
+
+  before do
+    Howler::Manager.stub(:current).and_return(subject)
+  end
+
   describe ".new" do
     it "should create a Logger" do
       Howler::Logger.should_receive(:new)
@@ -11,15 +17,15 @@ describe Howler::Manager do
 
   describe ".current" do
     before do
-      subject.stub(:sleep)
+      subject.wrapped_object.stub(:sleep)
     end
 
     it "should return the current manager instance" do
-      Howler::Manager.current.class.should == Howler::Manager
+      Howler::Manager.current.wrapped_object.class.should == Howler::Manager
     end
   end
 
-  describe "#run!" do
+  describe "#run" do
     def build_message(klass, method)
       Howler::Message.new(
         'class' => klass.to_s,
@@ -30,46 +36,43 @@ describe Howler::Manager do
     end
 
     before do
-      subject.stub(:done?).and_return(true)
+      subject.wrapped_object.stub(:done?).and_return(true)
       Howler::Config[:concurrency] = 10
     end
 
     it "should create workers" do
-      Howler::Worker.should_receive(:new).exactly(10)
+      Howler::Worker.should_receive(:new_link).exactly(10)
 
-      subject.run!
+      subject.run
     end
 
     describe "when there are no pending messages" do
       before do
-        subject.stub(:done?).and_return(false, true)
-        subject.stub(:sleep)
+        subject.wrapped_object.stub(:done?).and_return(false, true)
       end
 
       class SampleEx < Exception; end
 
       describe "when there are no messages" do
         it "should sleep for one second" do
-          subject.should_receive(:sleep).and_raise(SampleEx)
+          subject.wrapped_object.should_receive(:sleep).with(1)
 
-          expect {
-            subject.run!
-          }.to raise_error(SampleEx)
+          subject.run
         end
       end
     end
 
     describe "when there are pending messages" do
       before do
-        Howler::Manager.stub(:current).and_return(subject)
-
         Howler::Config[:concurrency] = 3
 
         @workers = 3.times.collect do
           mock(Howler::Worker, :perform => nil)
         end
 
-        subject.stub(:build_workers).and_return(@workers)
+        subject.wrapped_object.stub(:build_workers).and_return(@workers)
+        subject.wrapped_object.stub(:sleep)
+        subject.wrapped_object.stub(:done?).and_return(false, true)
 
         @messages = {
           'length' => build_message(Array, :length),
@@ -81,18 +84,6 @@ describe Howler::Manager do
         %w(length collect max to_s).each do |method|
           Howler::Message.stub(:new).with(hash_including('method' => method)).and_return(@messages[method])
         end
-
-        subject.stub(:sleep)
-
-        subject.stub(:done?).and_return(false, true)
-      end
-
-      describe "when there are no messages in the queue" do
-        it "should sleep" do
-          subject.should_receive(:sleep)
-
-          subject.run!
-        end
       end
 
       describe "when there is a single message in the queue" do
@@ -101,9 +92,9 @@ describe Howler::Manager do
         end
 
         it "should not sleep" do
-          subject.should_not_receive(:sleep)
+          subject.wrapped_object.should_not_receive(:sleep)
 
-          subject.run!
+          subject.run
         end
 
         it "should perform the message on a worker" do
@@ -112,7 +103,7 @@ describe Howler::Manager do
           @workers[0].should_not_receive(:perform)
           @workers[1].should_not_receive(:perform)
 
-          subject.run!
+          subject.run
         end
 
         describe "when a message gets taken by a worker" do
@@ -121,7 +112,7 @@ describe Howler::Manager do
           end
 
           it "should make the worker unavailable" do
-            subject.run!
+            subject.run
 
             subject.should have(2).workers
             subject.should have(1).chewing
@@ -145,13 +136,13 @@ describe Howler::Manager do
             @workers[1].should_receive(:perform).with(@messages['collect'], anything)
             @workers[0].should_receive(:perform).with(@messages['max'], anything)
 
-            subject.run!
+            subject.run
           end
         end
 
         describe "when there are more messages then workers" do
           before do
-            subject.stub(:done?).and_return(false, false, true)
+            subject.wrapped_object.stub(:done?).and_return(false, false, true)
 
             Howler::Config[:concurrency] = 2
           end
@@ -162,7 +153,7 @@ describe Howler::Manager do
             @workers[1].should_receive(:perform).with(@messages['length'], anything)
             @workers[0].should_receive(:perform).with(@messages['collect'], anything)
 
-            subject.run!
+            subject.run
           end
         end
 
@@ -170,7 +161,7 @@ describe Howler::Manager do
           let!(:worker) { mock(Howler::Worker) }
 
           before do
-            subject.stub(:done?).and_return(false, false, true)
+            subject.wrapped_object.stub(:done?).and_return(false, false, true)
             Howler::Config[:concurrency] = 4
 
             Howler::Worker.should_receive(:new).once.and_return(worker)
@@ -184,13 +175,13 @@ describe Howler::Manager do
               @workers[2].should_receive(:perform).with(@messages['collect'], anything)
               @workers[1].should_receive(:perform).with(@messages['max'], anything)
 
-              subject.run!
+              subject.run
 
-              subject.stub(:done?).and_return(false, true)
+              subject.wrapped_object.stub(:done?).and_return(false, true)
 
               Timecop.travel(5.minutes) do
                 @workers[0].should_receive(:perform).with(@messages['to_s'], anything).ordered
-                subject.run!
+                subject.run
               end
             end
           end
@@ -203,8 +194,8 @@ describe Howler::Manager do
       let!(:log) { mock(Howler::Logger, :info => nil, :debug => nil) }
 
       before do
-        subject.stub(:done?).and_return(false, true)
-        subject.instance_variable_set(:@logger, logger)
+        subject.wrapped_object.stub(:done?).and_return(false, true)
+        subject.wrapped_object.instance_variable_set(:@logger, logger)
         logger.stub(:log).and_yield(log)
 
         [:send_notification, :enforce_avgs].each_with_index do |method, i|
@@ -220,7 +211,7 @@ describe Howler::Manager do
         it "should log the number of messages to be processed" do
           log.should_receive(:info).with("Processing 2 Messages")
 
-          subject.run!
+          subject.run
         end
       end
 
@@ -233,22 +224,45 @@ describe Howler::Manager do
           log.should_receive(:debug).with('MESG - 123 Array.new.send_notification(0, "2s")')
           log.should_receive(:debug).with('MESG - 123 Array.new.enforce_avgs(1, "5k")')
 
-          subject.run!
+          subject.run
         end
       end
     end
   end
 
+  describe "#worker_death" do
+    before do
+      subject.wrapped_object.stub(:done?).and_return(true)
+
+      Howler::Config[:concurrency] = 3
+      subject.run
+    end
+
+    it "should create a new worker" do
+      Howler::Worker.should_receive(:new_link)
+
+      subject.worker_death
+    end
+
+    it "should add a worker" do
+      subject.should have(3).workers
+
+      subject.worker_death
+
+      subject.should have(4).workers
+    end
+  end
+
   describe "#shutdown" do
     before do
-      subject.stub(:done?).and_return(true)
+      subject.wrapped_object.stub(:done?).and_return(true)
 
       Howler::Config[:concurrency] = 2
-      subject.instance_variable_set(:@chewing, [mock(Howler::Worker)])
+      subject.wrapped_object.instance_variable_set(:@chewing, [mock(Howler::Worker)])
     end
 
     it "should remove non active workers from the list" do
-      subject.run!
+      subject.run
 
       subject.should have(2).workers
       subject.should have(1).chewing
@@ -263,7 +277,7 @@ describe Howler::Manager do
   describe "#done?" do
     describe "when the done option is set" do
       before do
-        subject.instance_variable_set(:@done, true)
+        subject.wrapped_object.instance_variable_set(:@done, true)
       end
 
       it "should return true" do
@@ -273,7 +287,7 @@ describe Howler::Manager do
 
     describe "when the done option is not set" do
       before do
-        subject.instance_variable_set(:@done, nil)
+        subject.wrapped_object.instance_variable_set(:@done, nil)
       end
 
       it "should return false" do

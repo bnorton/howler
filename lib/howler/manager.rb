@@ -1,7 +1,12 @@
+require 'celluloid'
 require 'multi_json'
 
 module Howler
   class Manager
+    include Celluloid
+
+    trap_exit :worker_death
+
     DEFAULT = "pending:default"
 
     attr_reader :workers, :chewing
@@ -23,7 +28,7 @@ module Howler
       current_size
     end
 
-    def run!
+    def run
       @workers = build_workers
 
       loop do
@@ -83,17 +88,21 @@ module Howler
       nil
     end
 
+    def worker_death(actor=nil, reason=nil)
+      @workers.push Howler::Worker.new_link
+    end
+
     private
 
     def begin_chewing
       worker = @workers.pop
-      @chewing.push(worker)
+      @chewing.push worker
       worker
     end
 
     def build_workers
       Howler::Config[:concurrency].to_i.times.collect do
-        Howler::Worker.new
+        Howler::Worker.new_link
       end
     end
 
@@ -104,7 +113,7 @@ module Howler
       if delta > 0
         [@workers.size, delta].min.times { @workers.pop }
       elsif delta < 0
-        delta.abs.times { @workers << Howler::Worker.new }
+        delta.abs.times { @workers.push Howler::Worker.new }
       end
     end
   end
