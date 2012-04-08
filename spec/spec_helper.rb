@@ -9,11 +9,22 @@ require 'capybara/dsl'
 require 'multi_json'
 require 'logger'
 
+class MockLogger
+  class Formatter; end
+  def initialize(*); end
+  def formatter=(*); end
+  def info(*); end
+end
+
+# suppress_warnings
+original, $VERBOSE = $VERBOSE, nil
+Logger = MockLogger
+$VERBOSE = original
+
 require 'howler'
 require 'howler/async'
 require 'howler/web'
 
-# Comment this out if you need to run request specs in a browser
 Capybara.default_driver = :selenium
 
 Capybara.app = Howler::Web

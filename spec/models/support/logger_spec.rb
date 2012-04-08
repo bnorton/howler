@@ -26,14 +26,6 @@ describe Howler::Logger do
       before do
         Logger.stub(:new).and_return(logger)
       end
-
-      it "should use the DefaultFormatter" do
-        Timecop.freeze(DateTime.now) do
-          Howler::Logger::DefaultFormatter.should_receive(:call).with(anything, Time.now, anything, "I am Logging!")
-
-          subject.info("I am Logging!")
-        end
-      end
     end
   end
 

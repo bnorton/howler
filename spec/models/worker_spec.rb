@@ -13,20 +13,21 @@ describe Howler::Worker do
     end
 
     before do
+      Howler::Manager.current.wrapped_object.stub(:done_chewing)
       Howler::Queue.stub(:new).and_return(queue)
       @message = build_message
     end
 
     it "should setup a Queue with the given queue name" do
-      Howler::Queue.should_receive(:new).with("AQueue")
+      Howler::Queue.should_receive(:new).with("a_queue")
 
-      subject.perform(@message, "AQueue")
+      subject.perform(@message, "a_queue")
     end
 
     it "should log statistics" do
       queue.should_receive(:statistics).with(Howler, :length, [1234])
 
-      subject.perform(@message, "AQueue")
+      subject.perform(@message, "a_queue")
     end
 
     it "should execute the given message" do
@@ -35,7 +36,7 @@ describe Howler::Worker do
 
       array.should_receive(:length).with(1234)
 
-      subject.perform(@message, "AQueue")
+      subject.perform(@message, "a_queue")
     end
 
     it "should use the specified queue" do
@@ -45,9 +46,9 @@ describe Howler::Worker do
     end
 
     it "should register with the manager when done" do
-      Howler::Manager.current.should_receive(:done_chewing).with(subject)
+      Howler::Manager.current.wrapped_object.should_receive(:done_chewing).with(subject)
 
-      subject.perform(@message, "AQueue")
+      subject.perform(@message, "a_queue")
     end
   end
 end

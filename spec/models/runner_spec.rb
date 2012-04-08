@@ -3,6 +3,7 @@ require "spec_helper"
 describe Howler::Runner do
   before do
     subject.stub(:require)
+    subject.stub(:sleep)
   end
 
   describe "#run" do
@@ -21,6 +22,12 @@ describe Howler::Runner do
 
     it "should run the manager" do
       manager.should_receive(:run!)
+
+      subject.run
+    end
+
+    it "should sleep forever" do
+      subject.should_receive(:sleep).with(no_args)
 
       subject.run
     end
@@ -79,6 +86,12 @@ describe Howler::Runner do
 
           it "should log the number of seconds it will wait" do
             log.should_receive(:info).with("INT - Waiting 6 seconds for workers to complete.")
+
+            subject.run
+          end
+
+          it "should wait the specified number of seconds" do
+            subject.should_receive(:sleep).with(6)
 
             subject.run
           end
