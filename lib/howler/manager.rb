@@ -60,7 +60,7 @@ module Howler
             log.debug("MESG - #{message.id} #{message.klass}.new.#{message.method}(#{Howler.args(message.args)})")
 
             worker = begin_chewing
-            worker.perform(message, Howler::Queue::DEFAULT)
+            worker.perform!(message, Howler::Queue::DEFAULT)
           end
         end
       end
@@ -86,11 +86,12 @@ module Howler
 
     def done_chewing(worker)
       worker = @chewing.delete(worker)
-      @workers.push(worker)
+      @workers.push(worker) if worker.alive?
       nil
     end
 
     def worker_death(actor=nil, reason=nil)
+      @chewing.delete(actor)
       @workers.push Howler::Worker.new_link
     end
 
