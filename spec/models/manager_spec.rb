@@ -67,7 +67,7 @@ describe Howler::Manager do
         Howler::Config[:concurrency] = 3
 
         @workers = 3.times.collect do
-          mock(Howler::Worker, :perform => nil)
+          mock(Howler::Worker, :perform! => nil)
         end
 
         subject.wrapped_object.stub(:build_workers).and_return(@workers)
@@ -98,10 +98,10 @@ describe Howler::Manager do
         end
 
         it "should perform the message on a worker" do
-          @workers[2].should_receive(:perform).with(@messages['length'], Howler::Queue::DEFAULT)
+          @workers[2].should_receive(:perform!).with(@messages['length'], Howler::Queue::DEFAULT)
 
-          @workers[0].should_not_receive(:perform)
-          @workers[1].should_not_receive(:perform)
+          @workers[0].should_not_receive(:perform!)
+          @workers[1].should_not_receive(:perform!)
 
           subject.run
         end
@@ -132,9 +132,9 @@ describe Howler::Manager do
 
         describe "when there are more workers then messages" do
           it "should perform all messages" do
-            @workers[2].should_receive(:perform).with(@messages['length'], anything)
-            @workers[1].should_receive(:perform).with(@messages['collect'], anything)
-            @workers[0].should_receive(:perform).with(@messages['max'], anything)
+            @workers[2].should_receive(:perform!).with(@messages['length'], anything)
+            @workers[1].should_receive(:perform!).with(@messages['collect'], anything)
+            @workers[0].should_receive(:perform!).with(@messages['max'], anything)
 
             subject.run
           end
@@ -148,10 +148,10 @@ describe Howler::Manager do
           end
 
           it "should scale and only remove as many messages as workers" do
-            @workers[0].unstub(:perform)
+            @workers[0].unstub(:perform!)
 
-            @workers[1].should_receive(:perform).with(@messages['length'], anything)
-            @workers[0].should_receive(:perform).with(@messages['collect'], anything)
+            @workers[1].should_receive(:perform!).with(@messages['length'], anything)
+            @workers[0].should_receive(:perform!).with(@messages['collect'], anything)
 
             subject.run
           end
@@ -171,16 +171,16 @@ describe Howler::Manager do
 
           it "should only enqueue messages that are scheduled before now" do
             Timecop.freeze(Time.now) do
-              worker.should_receive(:perform).with(@messages['length'], anything).ordered
-              @workers[2].should_receive(:perform).with(@messages['collect'], anything)
-              @workers[1].should_receive(:perform).with(@messages['max'], anything)
+              worker.should_receive(:perform!).with(@messages['length'], anything).ordered
+              @workers[2].should_receive(:perform!).with(@messages['collect'], anything)
+              @workers[1].should_receive(:perform!).with(@messages['max'], anything)
 
               subject.run
 
               subject.wrapped_object.stub(:done?).and_return(false, true)
 
               Timecop.travel(5.minutes) do
-                @workers[0].should_receive(:perform).with(@messages['to_s'], anything).ordered
+                @workers[0].should_receive(:perform!).with(@messages['to_s'], anything).ordered
                 subject.run
               end
             end

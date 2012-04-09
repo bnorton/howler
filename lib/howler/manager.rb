@@ -60,7 +60,7 @@ module Howler
             log.debug("MESG - #{message.id} #{message.klass}.new.#{message.method}(#{Howler.args(message.args)})")
 
             worker = begin_chewing
-            worker.perform(message, Howler::Queue::DEFAULT)
+            worker.perform!(message, Howler::Queue::DEFAULT)
           end
         end
       end
