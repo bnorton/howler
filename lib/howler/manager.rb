@@ -86,11 +86,12 @@ module Howler
 
     def done_chewing(worker)
       worker = @chewing.delete(worker)
-      @workers.push(worker)
+      @workers.push(worker) if worker.alive?
       nil
     end
 
     def worker_death(actor=nil, reason=nil)
+      @chewing.delete(actor)
       @workers.push Howler::Worker.new_link
     end
 

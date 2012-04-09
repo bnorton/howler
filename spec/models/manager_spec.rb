@@ -4,6 +4,7 @@ describe Howler::Manager do
   subject { Howler::Manager.new }
 
   before do
+    subject.wrapped_object.stub(:sleep)
     Howler::Manager.stub(:current).and_return(subject)
   end
 
@@ -130,7 +131,7 @@ describe Howler::Manager do
           end
         end
 
-        describe "when there are more workers then messages" do
+        describe "more workers then messages" do
           it "should perform all messages" do
             @workers[2].should_receive(:perform!).with(@messages['length'], anything)
             @workers[1].should_receive(:perform!).with(@messages['collect'], anything)
@@ -140,7 +141,7 @@ describe Howler::Manager do
           end
         end
 
-        describe "when there are more messages then workers" do
+        describe "more messages then workers" do
           before do
             subject.wrapped_object.stub(:done?).and_return(false, false, true)
 
@@ -157,7 +158,7 @@ describe Howler::Manager do
           end
         end
 
-        describe "when messages are queued to be run in the future" do
+        describe "run messages in the future" do
           let!(:worker) { mock(Howler::Worker) }
 
           before do
@@ -188,44 +189,93 @@ describe Howler::Manager do
         end
       end
     end
+  end
 
-    describe "logging" do
-      let!(:logger) { mock(Howler::Logger) }
-      let!(:log) { mock(Howler::Logger, :info => nil, :debug => nil) }
+  describe "logging" do
+    let!(:logger) { mock(Howler::Logger) }
+    let!(:log) { mock(Howler::Logger, :info => nil, :debug => nil) }
 
+    before do
+      Howler::Config[:concurrency] = 3
+
+      @workers = 3.times.collect do
+        mock(Howler::Worker, :perform! => nil)
+      end
+
+      subject.wrapped_object.stub(:build_workers).and_return(@workers)
+      subject.wrapped_object.stub(:done?).and_return(false, true)
+      subject.wrapped_object.instance_variable_set(:@logger, logger)
+      logger.stub(:log).and_yield(log)
+
+      [:send_notification, :enforce_avgs].each_with_index do |method, i|
+        subject.push(Array, method, [i, ((i+1)*100).to_s(36)])
+      end
+    end
+
+    describe "information" do
       before do
-        subject.wrapped_object.stub(:done?).and_return(false, true)
-        subject.wrapped_object.instance_variable_set(:@logger, logger)
-        logger.stub(:log).and_yield(log)
-
-        [:send_notification, :enforce_avgs].each_with_index do |method, i|
-          subject.push(Array, method, [i, ((i+1)*100).to_s(36)])
-        end
+        Howler::Config[:log] = 'info'
       end
 
-      describe "information" do
-        before do
-          Howler::Config[:log] = 'info'
-        end
+      it "should log the number of messages to be processed" do
+        log.should_receive(:info).with("Processing 2 Messages")
 
-        it "should log the number of messages to be processed" do
-          log.should_receive(:info).with("Processing 2 Messages")
+        subject.run
+      end
+    end
 
-          subject.run
-        end
+    describe "debug" do
+      before do
+        Howler::Config[:log] = 'debug'
       end
 
-      describe "debug" do
-        before do
-          Howler::Config[:log] = 'debug'
-        end
+      it "should show a digest of the messages" do
+        log.should_receive(:debug).with('MESG - 123 Array.new.send_notification(0, "2s")')
+        log.should_receive(:debug).with('MESG - 123 Array.new.enforce_avgs(1, "5k")')
 
-        it "should show a digest of the messages" do
-          log.should_receive(:debug).with('MESG - 123 Array.new.send_notification(0, "2s")')
-          log.should_receive(:debug).with('MESG - 123 Array.new.enforce_avgs(1, "5k")')
+        subject.run
+      end
+    end
+  end
 
-          subject.run
-        end
+  describe "#done_chewing" do
+    before do
+      worker = mock(Howler::Worker)
+      @chewing_worker = mock(Howler::Worker, :alive? => true)
+
+      subject.wrapped_object.stub(:build_workers).and_return([worker])
+      subject.wrapped_object.instance_variable_set(:@chewing, [@chewing_worker])
+
+    end
+
+    it "should remove the worker from chewing" do
+      subject.chewing.should include(@chewing_worker)
+
+      subject.done_chewing(@chewing_worker)
+
+      subject.chewing.should_not include(@chewing_worker)
+    end
+
+    it "should make the worker available" do
+      subject.workers.should_not include(@chewing_worker)
+
+      subject.done_chewing(@chewing_worker)
+
+      subject.workers.should include(@chewing_worker)
+    end
+
+    describe "when a worker has died" do
+      before do
+        @chewing_worker.stub(:alive?).and_return(false)
+      end
+
+      it "should make in un-available" do
+        subject.chewing.should include(@chewing_worker)
+
+        subject.done_chewing(@chewing_worker)
+
+        subject.chewing.should_not include(@chewing_worker)
+        subject.workers.should_not include(@chewing_worker)
       end
     end
   end
@@ -234,22 +284,41 @@ describe Howler::Manager do
     before do
       subject.wrapped_object.stub(:done?).and_return(true)
 
+      worker = mock(Howler::Worker)
+      @chewing_worker = mock(Howler::Worker)
+      @chewing_workers = [@chewing_worker]
+
+      subject.wrapped_object.stub(:build_workers).and_return([worker])
+      subject.wrapped_object.instance_variable_set(:@chewing, @chewing_workers)
+
       Howler::Config[:concurrency] = 3
       subject.run
     end
 
-    it "should create a new worker" do
-      Howler::Worker.should_receive(:new_link)
+    describe "when the worker is alive" do
+      before do
+        @chewing_worker.stub(:alive?).and_return(true)
+      end
 
-      subject.worker_death
-    end
+      it "should create a new worker" do
+        Howler::Worker.should_receive(:new_link)
 
-    it "should add a worker" do
-      subject.should have(3).workers
+        subject.worker_death
+      end
 
-      subject.worker_death
+      it "should add a worker" do
+        subject.should have(1).workers
 
-      subject.should have(4).workers
+        subject.worker_death
+
+        subject.should have(2).workers
+      end
+
+      it "should make in un-available" do
+        @chewing_workers.should_receive(:delete).with(@chewing_worker)
+
+        subject.worker_death(@chewing_worker)
+      end
     end
   end
 
