@@ -3,6 +3,7 @@
 --------------------
 
 #####Advantages
+- On-the-fly Configuration (via `Howler::Config`)
 - Simple message queueing interface.
 - Powerful and Fine-grained message retry logic.
 - Dashboard for managing and tracking message processing.
@@ -12,9 +13,20 @@
 --------------------
 
 ###Usage
-1. `gem 'howler'`.
+0. Rails 3 + Redis
+1. `gem 'howler'` in your Gemfile.
 2. `bundle install`.
 3. From the root of the Rails project run `[bundle exec] howler`.
+
+
+####Configuration
+
+Howler listens to configuration and updates accordingly.
+
+```ruby
+  # Scale Workers
+  Howler::Config[:concurrency] = 75
+```
 
 ####Queueing Interface
 
