@@ -6,7 +6,7 @@ Gem::Specification.new do |gem|
   gem.description   = gem.summary = "An Asynchronous Message Queue that's always Chewing on Something"
   gem.homepage      = "http://github.com/bnorton/howler"
 
-  gem.executables   = ['howler']
+  gem.executables   = ["howler"]
   gem.files         = `git ls-files`.split("\n")
   gem.test_files    = `git ls-files -- spec/*`.split("\n")
   gem.name          = "howler"
@@ -16,6 +16,9 @@ Gem::Specification.new do |gem|
   gem.add_dependency              'celluloid'
   gem.add_dependency              'connection_pool'
   gem.add_dependency              'multi_json'
+  gem.add_dependency              'sinatra'
   gem.add_development_dependency  'rake'
-  gem.add_development_dependency  'sinatra'
+  gem.add_development_dependency  'rspec'
+  gem.add_development_dependency  'capybara'
+  gem.add_development_dependency  'timecop'
 end

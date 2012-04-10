@@ -14,7 +14,7 @@
       <% @notifications.each do |notification| %>
         <tr>
           <td><%= notification['class'] %>.<%= notification['method'] %>(<%= process_args(notification['args']) %>)</td>
-          <td><%= Howler::Util.at(notification['created_at']) %></td>
+          <td class=notification"><%= Howler::Util.at(notification['created_at']) %></td>
           <td><%= notification['status'] %></td>
         </tr>
       <% end %>

@@ -1,11 +1,12 @@
 PATH
   remote: .
   specs:
-    howler (0.2.0)
+    howler (1.0.0)
       celluloid
       connection_pool
       multi_json
       redis
+      sinatra
 
 GEM
   remote: http://rubygems.org/
@@ -64,5 +65,4 @@ DEPENDENCIES
   howler!
   rake
   rspec
-  sinatra
   timecop
