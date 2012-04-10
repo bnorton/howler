@@ -116,7 +116,7 @@ module Howler
 
     def notify(message, e)
       message[:status] = 'notified'
-      message[:exception] = e
+      message[:cause] = e
       Howler.redis.with {|redis| redis.lpush("notifications", MultiJson.encode(message)) }
     end
 

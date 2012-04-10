@@ -3,6 +3,8 @@ require_relative ''
 require 'sinatra/base'
 require 'erb'
 
+Howler::Config[:path_prefix] = '/howler/'
+
 module Howler
   class Web < Sinatra::Base
     dir = File.dirname(File.expand_path(__FILE__))
@@ -39,6 +41,14 @@ module Howler
     end
 
     helpers do
+      def path(item)
+        Howler::Config[:path_prefix] + item
+      end
+
+      def h(thing)
+        escape_html(thing).gsub("\n", "<br>")
+      end
+
       def process_args(args)
         args.to_s.gsub(/^\[|\]$/, '')
       end
