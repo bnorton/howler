@@ -26,7 +26,6 @@ require 'howler/async'
 require 'howler/web'
 
 Capybara.default_driver = :selenium
-
 Capybara.app = Howler::Web
 
 RSpec.configure do |config|
@@ -34,8 +33,9 @@ RSpec.configure do |config|
 
   config.before(:each) do
     Howler.send(:_redis).flushall
-    Howler::Config.class_eval("@@options={:concurrency => 1}")
     Howler.stub(:next).with(:id).and_return(123)
+    Howler::Config[:concurrency] = 1
+    Howler::Config[:path_prefix] = '/'
   end
 
   config.after(:suite) do

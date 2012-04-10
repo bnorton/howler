@@ -11,5 +11,9 @@ module Howler
         'ruby_version' => `ruby -v`.chomp
       }
     end
+
+    def to_s(*)
+      "Exception from #{@env['hostname']}\n\n#{backtrace.join("\n")}"
+    end
   end
 end

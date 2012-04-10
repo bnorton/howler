@@ -2,7 +2,7 @@ require "spec_helper"
 
 describe Howler::Config do
   it "should have an attribute white-list" do
-    Howler::Config::WHITELIST.should == %w(concurrency shutdown_timeout)
+    Howler::Config::WHITELIST.should == %w(concurrency shutdown_timeout path_prefix)
   end
 
   describe ".[]" do

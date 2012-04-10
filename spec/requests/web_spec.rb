@@ -191,8 +191,9 @@ describe "web" do
   describe "Notifications#index" do
     describe "when there are notifications" do
       before do
+        @ex = generate_exception
         [:length, :collect, :max].each_with_index do |method, i|
-          queue.statistics(Array, method, [i*10]) { raise Howler::Message::Notify.new(generate_exception, :type => method)}
+          queue.statistics(Array, method, [i*10]) { raise Howler::Message::Notify.new(@ex, :type => method)}
         end
 
         visit "/notifications"
@@ -208,8 +209,9 @@ describe "web" do
 
           within ".table tbody" do
             page.should have_content(Howler::Util.at(@time))
+            page.should have_content(@ex.to_s)
 
-            %w(Array.length(0) Array.collect(10) Array.max(20) notified).each do |value|
+            %w(Array.length(0) Array.collect(10) Array.max(20)).each do |value|
               page.should have_content(value)
             end
           end
