@@ -18,7 +18,7 @@
           <td><%= queue.created_at %></td>
           <td><%= queue.success %></td>
           <td class="error"><%= queue.error %></td>
-          <td><a href="/howler/queues/<%= queue.id %>">More...</a></td>
+          <td><a href="<%= path "queues/#{queue.id}" %>">More...</a></td>
         </tr>
       <% end %>
       </tbody>

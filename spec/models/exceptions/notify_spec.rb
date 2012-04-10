@@ -23,4 +23,12 @@ describe Howler::Message::Notify do
       subject.env['ruby_version'].should == `ruby -v`.chomp
     end
   end
+
+  describe "#to_s" do
+    let!(:subj) { begin; raise subject; rescue Exception => e; e; end}
+
+    it "should have the allowed attributes" do
+      subject.to_s.should == "Exception from #{subject.env['hostname']}\n\n#{subject.backtrace.join("\n")}"
+    end
+  end
 end
