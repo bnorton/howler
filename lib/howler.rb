@@ -9,11 +9,11 @@ module Howler
     args.to_s.gsub(/^\[|\]$/, '')
   end
   def self.redis
-    @connection ||= ConnectionPool.new(:timeout => 1, :size => 5) { _redis }
+    @connection ||= ConnectionPool.new(:timeout => 1, :size => 30) { _redis }
   end
   private
-  def self._redis
-    @redis ||= ::Redis.connect(:url => 'redis://localhost:6379/0')
+  def self._redis(url = 'redis://localhost:6379/0')
+    @redis ||= ::Redis.connect(:url => url, :thread_safe => true)
   end
 end
 
