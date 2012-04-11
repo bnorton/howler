@@ -6,6 +6,138 @@ describe Howler::Runner do
     subject.stub(:sleep)
   end
 
+  describe ".new" do
+    let!(:opts) { mock(OptionParser, :on => nil, :parse! => nil) }
+
+    describe "parsing options" do
+      before do
+        OptionParser.stub(:new).and_yield(opts).and_return(opts)
+      end
+
+      it "should set up an options parser" do
+        OptionParser.should_receive(:new)
+
+        Howler::Runner.new
+      end
+
+      it "should parse the options" do
+        opts.should_receive(:parse!)
+
+        Howler::Runner.new
+      end
+    end
+
+    describe "for the redis url" do
+      before do
+        ARGV.replace(['-r', 'anything'])
+      end
+
+      it "should setup the matcher" do
+        OptionParser.stub(:new).and_yield(opts).and_return(opts)
+        opts.should_receive(:on).with("-r", "--redis_url URL", "The url of the Redis Server [redis://localhost:6379/0]")
+
+        Howler::Runner.new
+      end
+
+      it "should set the argument" do
+        Howler::Runner.new.options[:redis_url].should == 'anything'
+      end
+    end
+
+    describe "for custom key - values" do
+      before do
+        ARGV.replace(['-k', 'key:value,k:5'])
+      end
+
+      it "should setup the matcher" do
+        OptionParser.stub(:new).and_yield(opts).and_return(opts)
+        opts.should_receive(:on).with("-k", "--key_value OPTIONS", "Arbitrary key - values into Howler::Config")
+
+        Howler::Runner.new
+      end
+
+      it "should set the argument" do
+        runner = Howler::Runner.new
+
+        runner.options['key'].should == 'value'
+        runner.options['k'].should == '5'
+      end
+    end
+
+    describe "for concurrency" do
+      before do
+        ARGV.replace(['-c', '50'])
+      end
+
+      it "should setup the matcher" do
+        OptionParser.stub(:new).and_yield(opts).and_return(opts)
+        opts.should_receive(:on).with("-c", "--concurrency COUNT", "The number of Workers [30]")
+
+        Howler::Runner.new
+      end
+
+      it "should set the argument" do
+        Howler::Runner.new.options[:concurrency].should == '50'
+      end
+    end
+
+    describe "for the path" do
+      before do
+        ARGV.replace(['-p', 'a/path/to/env.rb'])
+      end
+
+      it "should setup the matcher" do
+        OptionParser.stub(:new).and_yield(opts).and_return(opts)
+        opts.should_receive(:on).with("-p", "--path PATH", "The path to the file to load [./config/environment]")
+
+        Howler::Runner.new
+      end
+
+      it "should set the argument" do
+        Howler::Runner.new.options[:path].should == 'a/path/to/env.rb'
+      end
+    end
+
+    describe "for the shutdown timeout" do
+      before do
+        ARGV.replace(['-s', '9'])
+      end
+
+      it "should setup the matcher" do
+        OptionParser.stub(:new).and_yield(opts).and_return(opts)
+        opts.should_receive(:on).with("-s", "--shutdown_timeout SECONDS", "The number of seconds to wait for workers to finish [5]")
+
+        Howler::Runner.new
+      end
+
+      it "should set the argument" do
+        Howler::Runner.new.options[:shutdown_timeout].should == '9'
+      end
+    end
+
+
+    it "should start the redis connection" do
+      redis = mock(Redis, :with => nil)
+      ARGV.replace(['-r', 'some/url:port'])
+
+      Howler.should_receive(:_redis).ordered.with('some/url:port')
+      Howler.should_receive(:redis).ordered.at_least(1).and_return(redis)
+
+      Howler::Runner.new
+    end
+
+    it "should store the config in Howler::Config" do
+      ARGV.replace(['-r', 'anything', '-c', '50'])
+
+      Howler::Config.stub(:[]=)
+
+      Howler::Config.should_receive(:[]=).with(:concurrency, '50')
+      Howler::Config.should_receive(:[]=).with(:redis_url, 'anything')
+
+      Howler::Runner.new
+    end
+  end
+
   describe "#run" do
     let!(:manager) { Howler::Manager.current }
 

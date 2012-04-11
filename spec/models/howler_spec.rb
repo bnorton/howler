@@ -46,7 +46,7 @@ describe Howler do
     let(:pool) { mock("ConnectionPool2") }
 
     xit "should be a ConnectionPool" do
-      ConnectionPool.should_receive(:new).with(:timeout => 1, :size => 5)
+      ConnectionPool.should_receive(:new).with(:timeout => 1, :size => 30)
 
       Howler.redis
     end
