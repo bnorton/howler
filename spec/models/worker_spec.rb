@@ -6,9 +6,9 @@ describe Howler::Worker do
 
     def build_message
       Howler::Message.new(
-        "class" => "Howler",
-        "method" => "length",
-        "args" => [1234]
+        'class' => "Howler",
+        'method' => "length",
+        'args' => [1234]
       )
     end
 
@@ -25,7 +25,7 @@ describe Howler::Worker do
     end
 
     it "should log statistics" do
-      queue.should_receive(:statistics).with(Howler, :length, [1234])
+      queue.should_receive(:statistics).with(Howler, :length, [1234], an_instance_of(Float))
 
       subject.perform(@message, "a_queue")
     end
