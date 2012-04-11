@@ -206,34 +206,46 @@ describe Howler::Manager do
       subject.wrapped_object.stub(:done?).and_return(false, true)
       subject.wrapped_object.instance_variable_set(:@logger, logger)
       logger.stub(:log).and_yield(log)
-
-      [:send_notification, :enforce_avgs].each_with_index do |method, i|
-        subject.push(Array, method, [i, ((i+1)*100).to_s(36)])
-      end
     end
 
-    describe "information" do
-      before do
-        Howler::Config[:log] = 'info'
-      end
-
-      it "should log the number of messages to be processed" do
-        log.should_receive(:info).with("Processing 2 Messages")
+    describe "when there are no messages" do
+      it "should not log" do
+        log.should_not_receive(:info)
 
         subject.run
       end
     end
 
-    describe "debug" do
+    describe "when there are messages" do
       before do
-        Howler::Config[:log] = 'debug'
+        [:send_notification, :enforce_avgs].each_with_index do |method, i|
+          subject.push(Array, method, [i, ((i+1)*100).to_s(36)])
+        end
       end
 
-      it "should show a digest of the messages" do
-        log.should_receive(:debug).with('MESG - 123 Array.new.send_notification(0, "2s")')
-        log.should_receive(:debug).with('MESG - 123 Array.new.enforce_avgs(1, "5k")')
+      describe "information" do
+        before do
+          Howler::Config[:log] = 'info'
+        end
 
-        subject.run
+        it "should log the number of messages to be processed" do
+          log.should_receive(:info).with("Processing 2 Messages")
+
+          subject.run
+        end
+      end
+
+      describe "debug" do
+        before do
+          Howler::Config[:log] = 'debug'
+        end
+
+        it "should show a digest of the messages" do
+          log.should_receive(:debug).with('MESG - 123 Array.new.send_notification(0, "2s")')
+          log.should_receive(:debug).with('MESG - 123 Array.new.enforce_avgs(1, "5k")')
+
+          subject.run
+        end
       end
     end
   end

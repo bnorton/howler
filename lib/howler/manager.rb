@@ -51,7 +51,7 @@ module Howler
         end
 
         @logger.log do |log|
-          log.info("Processing #{messages.size} Messages")
+          log.info("Processing #{messages.size} Messages") if messages.size > 0
 
           sleep(1) unless messages.any?
 
