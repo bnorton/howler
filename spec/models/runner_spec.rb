@@ -51,7 +51,7 @@ describe Howler::Runner do
 
       it "should setup the matcher" do
         OptionParser.stub(:new).and_yield(opts).and_return(opts)
-        opts.should_receive(:on).with("-k", "--key_value OPTIONS", "Arbitrary key - values into Howler::Config")
+        opts.should_receive(:on).with("-k", "--key_value OPTIONS", "Arbitrary key - values into Howler::Config [key:value,another:value]")
 
         Howler::Runner.new
       end
@@ -88,7 +88,7 @@ describe Howler::Runner do
 
       it "should setup the matcher" do
         OptionParser.stub(:new).and_yield(opts).and_return(opts)
-        opts.should_receive(:on).with("-p", "--path PATH", "The path to the file to load [./config/environment]")
+        opts.should_receive(:on).with("-p", "--path PATH", "The path to the file to load [./config/environment.rb]")
 
         Howler::Runner.new
       end
