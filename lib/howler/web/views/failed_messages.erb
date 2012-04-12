@@ -1,23 +1,23 @@
 <div style="margin-top: 30px;" class="message_list">
   <div class="table_title">Failed Messages</div>
-  <div class="table stable-striped table-bordered">
+  <div class="table failed stable-striped table-bordered">
     <table>
       <thead>
       <tr>
         <th>Message</th>
         <th>Created At</th>
         <th>Failed At</th>
-        <th>Cause</th>
-        <th>Status</th>
+        <th class="status">Status</th>
+        <th class="cause">Cause</th>
       </tr>
       </thead>
       <% @failed.each do |message| %>
         <tr>
-          <td><%= message['class'] %>.<%= message['method'] %>(<%= process_args(message['args']) %>)</td>
-          <td><%= Howler::Util.at(message['created_at']) %></td>
+          <td class="message"><%= message['class'] %>.<%= message['method'] %>(<%= process_args(message['args']) %>)</td>
+          <td class="created_at"><%= Howler::Util.at(message['created_at']) %></td>
           <td class="failed_at"><%= Howler::Util.at(message['failed_at']) %></td>
-          <td><%= message['cause'] %></td>
           <td><%= message['status'] %></td>
+          <td class="cause"><%= message['cause'] %></td>
         </tr>
       <% end %>
       <tbody>

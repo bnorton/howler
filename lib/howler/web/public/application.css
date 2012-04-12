@@ -22,3 +22,30 @@
   font-size: 28px;
   margin: 10px;
 }
+
+.table.failed, .table.processed, .table.pending, .table.notification {
+  width: 1000px;
+}
+
+.table .message {
+  min-width: 150px;
+  max-width: 450px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.table .created_at {
+  width: 300px;
+}
+
+.table .failed_at {
+  width: 300px;
+}
+
+.table .cause {
+  width: 650px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}

@@ -109,7 +109,7 @@ module Howler
 
     def failed(message, e)
       message[:status] = 'failed'
-      message[:cause] = e.class.name
+      message[:cause] = e
       message[:failed_at] = Time.now.to_f
       Howler.redis.with {|redis| redis.zadd("#{name}:messages:failed", Time.now.to_f, MultiJson.encode(message)) }
     end
